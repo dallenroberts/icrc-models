@@ -115,6 +115,17 @@ seedInfections <- function(dt, prop) {
 
 }
 
+riskAdjust <- function(dt) {
+  
+  ## Sums the population across risk categories for each compartment
+  dt[, c("risk", "sum") := list(risk, sum(count)), by = .(hiv, age, male, cd4, vl, circ, prep, condom)]
+  
+  ## Multiplies the summed population by the risk proportions defined in the initial parameters
+  setkey(dt, age, male, risk)
+  dt[risk_props, count := sum * prop]
+  
+  dt[, sum := NULL]
+}
 
 
 ## Run model
