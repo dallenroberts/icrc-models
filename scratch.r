@@ -204,12 +204,28 @@ riskAdjust <- function(dt) {
 ## Run model
 if(t == 0) {
   seedInfections(pop, 0.001) 
-  pop[hiv == 0, sum(count)] * 0.001 == pop[hiv == 1, sum(count)]
+  pop[hiv == 0, sum(count)] * 0.001 == pop[hiv == 1, sum(count)] ## Check
 }
 
-# addBirths(pop)
+## Demography
+addBirths(pop)
 subtractDeaths(pop)
 agePop(pop)
 
+## Disease progression
+# progressDisease(pop)
+
+## Transmission
+
+# Compute difference
+pop[, c("count", "diff") := list(count + diff, 0)]
+
+# Adjust population to match risk prevalence
+riskAdjust(pop)
+
+## Calculate some statistics
+
+# Increment time step
+t <- t + 1
 
 
