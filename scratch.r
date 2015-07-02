@@ -66,6 +66,46 @@ pop$diff <- 0
 ## Demography functions
 addBirths <- function(dt) {
   
+  ## Parameters (move these outside)
+  nncirc_prop <- 0.1 ## Neonatal circumcision prevalence
+  vert_trans <- 0.34 ## vertical transmission - this will need to become a function
+  setkey(fert, age, male, cd4)
+  setkey(dt, age, male, cd4)
+  
+  ## All births
+  dt[fert, births := count * gamma]
+  
+  ## Calculate births from uninfected mothers
+  births_from_neg <- dt[hiv == 0, sum(births, na.rm = TRUE)]
+  
+  ## Calculate  births from infected mothers
+  births_from_pos <- dt[hiv == 1, sum(births, na.rm = TRUE)]
+  
+  ## Calculate number of HIV+ births
+  pos_births <- births_from_pos * vert_trans
+  
+  ## Calculate number of HIV- births
+  neg_births <- births_from_pos * (1 - vert_trans) + births_from_neg
+  
+  ## Add to population
+  dt[, births := 0]
+  
+  ## Add to population by sex
+  dt[hiv == 0 & age == 1 & vl == 0 & cd4 == 0 & prep == 0 & condom == 0, births := neg_births * 0.5]
+  dt[hiv == 1  & age == 1 & vl == 1 & cd4 == 1 & prep == 0 & condom == 0, births := pos_births * 0.5]
+  
+  ## Distribute by circumcision
+  dt[male == 0 & circ == 1, births := 0]
+  dt[male == 1 & circ == 1, births := births * nncirc_prop]
+  dt[male == 1 & circ == 0, births := births * (1 - nncirc_prop)]
+  
+  ## Distribute totals across risk status
+  setkey(dt, age, male, risk)
+  dt[risk_props, births := births * prop]
+  
+  ## Add births to population
+  dt[, diff := diff + births]
+  dt[, births := NULL]
   
 }
 
