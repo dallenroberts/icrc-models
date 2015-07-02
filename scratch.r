@@ -32,6 +32,18 @@ setkey(init_pop, hiv, age, male, cd4, vl, circ, prep, condom)
 risk_props <- fread("data/risk_proportions.csv")
 setkey(risk_props, age, male, risk)
 
+## Fertility
+fert <- fread("data/base_fertility_rate.csv")
+
+## Add effect modification by CD4 count
+fert <- fert[, .(age, male, gamma, cd4 = rep(0:5, each = 12))]
+
+## Add these coefficients - need to confirm this with Roger because the models and the supplementary are contradictory
+fert_coeffs <- data.table(cd4 = seq(0, 5), coeff = c(1, 1, 0.59, 0.59, 0.42, 0.42))
+setkey(fert_coeffs, cd4)
+setkey(fert, cd4)
+fert[fert_coeffs, gamma := gamma * coeff]
+
 ## Background mortality (non-HIV) by age and sex
 back_mort <- fread("data/background_mortality.csv")
 setkey(back_mort, age, male)
