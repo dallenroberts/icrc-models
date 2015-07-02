@@ -53,6 +53,10 @@ hiv_mort <- fread("data/hiv_mortality.csv")
 hiv_mort$hiv <- 1
 setkey(hiv_mort, hiv, age, cd4)
 
+## Disease progression - cd4_duration and vl_duration are average duration spent in that CD4 or VL category (respectively) in years
+dis_prog <- fread("data/disease_progression.csv")
+dis_prog$hiv <- 1
+
 ## Initialize population matrix
 pop <- as.data.table(expand.grid(hiv, age, male, risk, cd4, vl, circ, prep, condom))
 setattr(pop, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom"))
@@ -90,6 +94,35 @@ agePop <- function(dt) {
   setkeyv(dt, all_keys)
   dt[prev_age, diff := diff + 1/5 * count_prev]
 
+}
+
+## Disease progression
+progressDisease <- function(dt) {
+  
+  # dt <- copy(pop)
+  
+  ## Note that we want the probability of progressing in a given time step.  This can be obtained from the mean duration using the exponential decay function (assuming a constant rate).  http://hyperphysics.phy-astr.gsu.edu/hbase/nuclear/meanlif.html
+  
+  setkey(dis_prog, hiv, male, vl, cd4)
+  setkey(dt, hiv, male, vl, cd4)
+  
+  ## CD4 Efflux
+  dt[dis_prog[cd4 < 5], diff := diff - count * exp(1 - 1/cd4_duration)]
+  l
+  ## VL Efflux
+  dt[dis_prog[vl < 5], diff := diff - count * exp(1 - 1/vl_duration)]
+  
+  ## Influx - need to get previous categories
+  ## CD4 Influx
+  prev_cd4 <- copy(dt[cd4 > 0 & cd4 < 5 & hiv == 1])
+  prev_cd4[dis_prog[cd4 < 5], c("prob", "count_prev") := list(exp(1 - 1/cd4_duration), count)]
+  prev_cd4[, cd4 := cd4 + 1]
+  setkeyv(prev_cd4, all_keys)
+  setkeyv(dt, all_keys)
+  dt[prev_cd4, diff := diff + prob * count_prev]
+  
+  ## VL Influx (check that above code actually works first)
+  
 }
 
 ## Add intial populations.  Initially all are susceptible. 
