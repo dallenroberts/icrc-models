@@ -179,6 +179,44 @@ progressDisease <- function(dt) {
   
 }
 
+interpolate <- function(breaks, values, step_size, start = year_start, end = year_end) {
+  
+  smoothed <- rep(0, (year_end - year_start)/ step_size + 1)
+  
+  ## Checks
+  if(!is.numeric(breaks) | !is.numeric(values) | !is.numeric(step_size)) stop("Error: breaks, values, and steps must both be numeric vectors")
+  if(any(is.na(breaks) | is.na(values))) stop("Error: Missing breaks or values" )
+  if(min(breaks) < year_start | max(breaks) > year_end) stop("Error: breaks fall outside of year limits")
+  if(any(sort(breaks) != breaks)) stop("Error: breaks are not sorted")
+  
+  ## Starting values
+  if(breaks[1] != year_start) {
+    smoothed[1:((breaks[1] - year_start)/step_size + 1)] <- values[1]
+  }
+  
+  ## Ending values
+  if(breaks[length(breaks)] != year_end) {
+    smoothed[((breaks[length(breaks)] - year_start) / step_size + 1):length(smoothed)] <- values[length(values)] 
+    
+  }
+  
+  ## Intermediate values
+  for(ii in 1:length(values)) {
+    smoothed[(breaks[ii] - year_start)/step_size + 1] <- values[ii]
+  }
+  
+  ## Interpolated values
+  for(ii in 1:(length(values) - 1)) {
+    
+    smoothed[(breaks[ii] - year_start)/step_size + 1] <- values[ii]
+    
+    slope <- (values[ii + 1] - values[ii])/((breaks[ii + 1] - breaks[ii])/step_size + 1)
+    smoothed[((breaks[ii] - year_start)/step_size + 2):((breaks[ii + 1] - year_start)/step_size )] <- values[ii] + slope * seq(1, ((breaks[ii + 1] - breaks[ii])/step_size - 1))
+      
+    
+  }
+  
+}
 ## Add intial populations.  Initially all are susceptible. 
 setkey(pop, hiv, age, male, cd4, vl, circ, prep, condom)
 pop[init_pop, count := pop]
