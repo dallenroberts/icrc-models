@@ -74,7 +74,15 @@ addBirths <- function(dt) {
   
   ## Parameters (move these outside)
   nncirc_prop <- 0.1 ## Neonatal circumcision prevalence
-  vert_trans <- 0.34 ## vertical transmission - this will need to become a function
+  
+  ## Setting vertical transmission. Note that year is a global variable.  Should provide a linear interpolation once the hard-coded values can be verified
+  if(year <= 2004) {
+    vert_trans <- 0.34
+  } else if(year > 2004 & year < 2008) {
+    vert_trans <- 0.202
+  } else {
+    vert_trans <- 0.071
+  }
   setkey(fert, age, male, cd4)
   setkey(dt, age, male, cd4)
   
