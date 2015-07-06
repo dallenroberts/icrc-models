@@ -7,6 +7,11 @@ rm(list = ls())
 
 library(data.table)
 
+## Global variables
+year_start <- 1970
+year_end <- 2020
+tstep <- 0.25 # years
+nsteps <- (year_end - year_start) * (1 / tstep)
 
 ## Attribute values
 hiv <- c(0, 1)
@@ -23,6 +28,7 @@ all_keys <- c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom
 
 ## Load parameters
 ## Initial population
+
 init_pop <- fread("data/initial_populations.csv")
 init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model
 init_pop[, c("hiv", "cd4", "vl", "circ", "prep", "condom") := 0]
