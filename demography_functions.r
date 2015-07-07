@@ -6,20 +6,14 @@
 
 ## This file contains the demography functions for the compartmental model.  "addBirths" augments the diff variable by multiplying fertility rates by counts of women. "subtractDeaths" decreases the diff variable by multiplying deaths rates by counts.  "agePop" keeps track (in "diff") of the counts entering/leaving each age group due to aging.
 
+## Note that "dt" stands for "data.table" and "time_index" is the iteration of the loop (corresponding to the global variable tt), which represents the discrete time point. Functions that have "time_index" as an argument are time-dependent.
+
 ## Demography functions
-addBirths <- function(dt) {
+addBirths <- function(dt, time_index = tt) {
   
   ## Parameters (move these outside)
   nncirc_prop <- 0.1 ## Neonatal circumcision prevalence
   
-  ## Setting vertical transmission. Note that year is a global variable.  Should provide a linear interpolation once the hard-coded values can be verified
-  if(year <= 2004) {
-    vert_trans <- 0.34
-  } else if(year > 2004 & year < 2008) {
-    vert_trans <- 0.202
-  } else {
-    vert_trans <- 0.071
-  }
   setkey(fert, age, male, cd4)
   setkey(dt, age, male, cd4)
   
@@ -33,10 +27,10 @@ addBirths <- function(dt) {
   births_from_pos <- dt[hiv == 1, sum(births, na.rm = TRUE)]
   
   ## Calculate number of HIV+ births
-  pos_births <- births_from_pos * vert_trans
+  pos_births <- births_from_pos * vert_trans[time_index]
   
   ## Calculate number of HIV- births
-  neg_births <- births_from_pos * (1 - vert_trans) + births_from_neg
+  neg_births <- births_from_pos * (1 - vert_trans[time_index]) + births_from_neg
   
   ## Initialize births added
   dt[, births := 0]
