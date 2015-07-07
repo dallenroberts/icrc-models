@@ -49,7 +49,6 @@ for(tt in 1:nsteps) {
   
   print(tt)
   
-  ## Seed infections for first year
   if(tt == 1) {
     ## Add intial populations.  Initially all are susceptible. 
     setkey(pop, hiv, age, male, cd4, vl, circ, prep, condom)
