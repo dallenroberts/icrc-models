@@ -20,10 +20,6 @@ setkey(risk_props, age, male, risk)
 ## Fertility
 fert <- fread("data/base_fertility_rate.csv")
 
-## Vertical transmission
-vert_trans <- fread("data/vertical_transmission.csv")
-vert_trans <- interpolate(breaks = vert_trans$year, values = vert_trans$vert)
-
 ## Add effect modification by CD4 count
 fert <- fert[, .(age, male, gamma, cd4 = rep(0:5, each = 12))]
 
