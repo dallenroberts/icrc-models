@@ -11,7 +11,7 @@ library(data.table)
 year_start <- 1970
 year_end <- 2020
 tstep <- 0.25 # years
-nsteps <- (year_end - year_start) * (1 / tstep)
+nsteps <- (year_end - year_start) / tstep + 1
 
 ## Attribute values
 hiv <- c(0, 1)
@@ -46,6 +46,8 @@ pop$diff <- 0
 
 ## Run model
 for(tt in 1:nsteps) {
+  
+  print(tt)
   
   ## Seed infections for first year
   if(tt == 1) {
