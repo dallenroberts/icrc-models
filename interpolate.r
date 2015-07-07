@@ -8,7 +8,7 @@
 
 ## The function will return a vector of values.  The length of the vector will be the total number of time steps between (and including) the start and end years.  The values at the breaks will be the values passed in the "values" argument to the function.  The values between the breaks will be linear interpolations between the passed values.  If the minimum and maximum breaks are greater than or less than (respectively) the year_start and year_end, the function will return repeated corresponding values for the years between year_start and the minimum break or year_end and the maximum break.
 
-interpolate <- function(breaks, values, step_size, start = year_start, end = year_end) {
+interpolate <- function(breaks, values, step_size = tstep, start = year_start, end = year_end) {
   
   smoothed <- rep(0, (year_end - year_start)/ step_size + 1)
   
@@ -39,5 +39,7 @@ interpolate <- function(breaks, values, step_size, start = year_start, end = yea
     slope <- (values[ii + 1] - values[ii])/((breaks[ii + 1] - breaks[ii])/step_size + 1)
     smoothed[((breaks[ii] - year_start)/step_size + 2):((breaks[ii + 1] - year_start)/step_size )] <- values[ii] + slope * seq(1, ((breaks[ii + 1] - breaks[ii])/step_size - 1))
   }
+  
+  return(smoothed)
   
 }
