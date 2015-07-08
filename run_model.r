@@ -74,7 +74,8 @@ for(tt in 1:nsteps) {
   progressDisease(pop)
   
   ## Transmission
-  # calcMixMat(pop) ## Sets up the mixing matrix
+  calcMixMat(pop, tt) ## Sets up the mixing matrix
+  
   # calcLambda(pop)
   
   
