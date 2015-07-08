@@ -30,6 +30,10 @@ setkey(fert, cd4)
 fert[fert_coeffs, gamma := gamma * coeff]
 rm(fert_coeffs)
 
+## Vertical transmission
+vert_trans <- fread("data/vertical_transmission.csv")
+vert_trans <- interpolate(breaks = vert_trans$year, values = vert_trans$vert)
+
 ## Background mortality (non-HIV) by age and sex
 back_mort <- fread("data/background_mortality.csv")
 setkey(back_mort, age, male)
