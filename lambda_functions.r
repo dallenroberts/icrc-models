@@ -4,6 +4,8 @@
 ## Description: Load functions to calculate force of infection for compartmental model
 ##################################################
 
+require(reshape2)
+
 ## calcMixMat - sets the proportion of partnerships that come from each age and sexual risk group. It defines two scenarios - random mixing and assortative mixing. Assortative mixing is governed by delta (age and risk).  The weights governing the balance between assortative and random mixing are determined by epsilon. The mixing matrix contains, for each sex, age, and risk category, the proportion of partnerships that come from each sex, age, and risk category of the partner. The sum of the "prop" column in the mixing matrix by sex, age, and risk category should equal 1.
 
 ## adjustPartnerships - this function adjusts the annual number of sexual partnerships such that those reported by men and women are equal.
@@ -82,8 +84,6 @@ calcMixMat <- function(dt, time_index = tt) {
 ## Adjust number of partnerships. The number of partnerships is adjusted for differences in reported number of sexual partners between males and females. The global parameter "theta" determines whether the difference is driven by males or females, where theta = 1 indicates entirely male-driven and theta = 0 indicates entirely female-driven.
 adjustPartnerships <- function(dt, mix_mat) {
   
-  dt <- copy(pop)
-  
   ## Sum number of partnerships by age, sex, and risk
   sums <- dt[, list(count = sum(count)), by = list(age, male, risk)]
   sums[partners, partners_count := count * partners]
@@ -93,10 +93,26 @@ adjustPartnerships <- function(dt, mix_mat) {
   setkey(sums, male, age, risk)
   mix_mat[sums, partners := partners_count * prop]
   
-  ## Calculate male and female discrepancy
-  ## FIXME - want to just divide the partners column.  Probably should do a split and merge (or cast) to be safe.
-  ## test <- mix_mat[male == 0] / mix_mat[male == 1]
+  ## Calculate male and female discrepancy in reported partners
+  disc <- dcast.data.table(mix_mat, age + risk + age_p + risk_p ~ male, value.var = "partners")
+  setnames(disc, "0", "female")
+  setnames(disc, "1", "male")
+  disc[, discrepancy := male/female]
+  disc[, c("female", "male") := NULL]
+  disc <- disc[rep(1:nrow(disc), times = 2)]
+  disc[, male := rep(c(0, 1), each = nrow(disc) / 2)]
   
+  ## Calculate adjusted partnerships/year.  Note that the adjusted partnerships/year, unlike partnerships/year, seems to take into account the age and risk category of the partner.
+  ## Merge on the number of partners (unadjusted)
+  setkey(disc, male, age, risk)
+  setkey(partners, male, age, risk)
+  disc[partners, partners := partners]
+  
+  ## Calculated adjusted partners based on global variable theta
+  disc[male == 1, adjusted_partners := partners * discrepancy ^ -(1 - theta)]
+  disc[male == 0, adjusted_partners := partners * discrepancy ^ theta]
+  
+  return(disc)
 }
   
 
