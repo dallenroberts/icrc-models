@@ -48,15 +48,15 @@ dis_prog <- fread("data/disease_progression.csv")
 dis_prog$hiv <- 1
 
 ## Initialize mixing matrix.
-mix_mat <- as.data.table(expand.grid(male, age, risk, male, age, risk))
+mixing_matrix <- as.data.table(expand.grid(male, age, risk, male, age, risk))
 
 ## The "_p" indicates that the attribute corresponds to the individual's partner
-setattr(mix_mat, 'names', c("male", "age", "risk", "male_p", "age_p", "risk_p"))
+setattr(mixing_matrix, 'names', c("male", "age", "risk", "male_p", "age_p", "risk_p"))
 
 ## Assuming only heterosexual transmission
-mix_mat <- mix_mat[mix_mat$male != mix_mat$male_p]
+mixing_matrix <- mixing_matrix[mixing_matrix$male != mixing_matrix$male_p]
 
-mix_mat$prop <- 0
+mixing_matrix$prop <- 0
 
 ## Set epsilons - these parameters govern the extent to which mixing is random or assortative. Note that we could break these out separately by for epsilon_age and epsilon_risk.
 epsilons <- fread("data/epsilons.csv")
