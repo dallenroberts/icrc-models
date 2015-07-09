@@ -115,12 +115,20 @@ adjustPartnerships <- function(dt, mix_mat) {
   disc[male == 1, adjusted_partners := partners * discrepancy ^ -(1 - theta)]
   disc[male == 0, adjusted_partners := partners * discrepancy ^ theta]
   
-  return(disc)
-}
+  ## Note that superassigment operator here - for now (for debugging) we want adjusted_partners in the parent environment.  We can figure out later a way to merge some of the lambda_functions together so we don't need to keep track of disc in the run_model environment.
+  adjusted_partners <<- disc[, .(male, age, risk, age_p, risk_p, adjusted_partners)]
   
-
-
-
-## Calculate per-partnership probability of HIV transmission per year.  Depends on risk group of HIV-negative partner and viral load of HIV positive partner.
+}
 
 ## Calculate lambda (force of infection) for each individual. 
+calcLambda <- function(dt, mix_mat, adj_parts) {
+#   dt <- copy(pop)
+#   mix_mat <- copy(mixing_matrix)
+#   adj_parts <- copy(adjusted_partners)
+  
+  
+  
+  
+}
+
+
