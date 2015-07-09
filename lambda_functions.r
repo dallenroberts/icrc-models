@@ -12,7 +12,7 @@ require(reshape2)
 
 ## Note that "dt" stands for "data.table" and "time_index" is the iteration of the loop (corresponding to the global variable tt), which represents the discrete time point. Functions that have "time_index" as an argument are time-dependent.
 
-calcMixMat <- function(dt, time_index = tt) {
+calcMixMat <- function(dt, mix_mat, time_index = tt) {
   
   ## Reset mixing matrix to zero
   mix_mat[, prop := 0]
