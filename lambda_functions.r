@@ -96,14 +96,26 @@ adjustPartnerships <- function(dt, mix_mat) {
   setkey(sums, male, age, risk)
   mix_mat[sums, partners := partners_count * prop]
   
-  ## Calculate male and female discrepancy in reported partners
-  disc <- dcast.data.table(mix_mat, age + risk + age_p + risk_p ~ male, value.var = "partners")
-  setnames(disc, "0", "female")
-  setnames(disc, "1", "male")
-  disc[, discrepancy := male/female]
-  disc[, c("female", "male") := NULL]
-  disc <- disc[rep(1:nrow(disc), times = 2)]
-  disc[, male := rep(c(0, 1), each = nrow(disc) / 2)]
+  ## Calculate male and female discrepancy in reported partners.  Could probably figure out a way to reshape to clean this up, but it is somewhat non-trivial.
+  male_reports <- mix_mat[male == 1, .(age, risk, age_p, risk_p, partners)]
+  setnames(male_reports, c("age", "risk", "age_p", "risk_p", "partners"), c("age_male", "risk_male", "age_female", "risk_female", "partners_male"))
+  
+  female_reports <- mix_mat[male == 0, .(age, risk, age_p, risk_p, partners)]
+  setnames(female_reports, c("age", "risk", "age_p", "risk_p", "partners"), c("age_female", "risk_female", "age_male", "risk_male", "partners_female"))
+  
+  setkey(male_reports, age_male, risk_male, age_female, risk_female)
+  setkey(female_reports, age_male, risk_male, age_female, risk_female)
+  male_reports[female_reports, c("partners_female", "discrepancy") := list(partners_female, partners_male / partners_female)]
+  female_reports[male_reports, c("partners_male", "discrepancy") := list(partners_male, partners_male / partners_female)]
+  
+  ## Reformat
+  setnames(male_reports, c("age_male", "risk_male", "age_female", "risk_female"), c("age", "risk", "age_p", "risk_p"))
+  male_reports[, c("male", "partners_male", "partners_female") := list(1, NULL, NULL)]
+
+  setnames(female_reports, c("age_female", "risk_female", "age_male", "risk_male"), c("age", "risk", "age_p", "risk_p"))
+  female_reports[, c("male", "partners_male", "partners_female") := list(0, NULL, NULL)]
+  
+  disc <- rbindlist(list(male_reports, female_reports))
   
   ## Calculate adjusted partnerships/year.  Note that the adjusted partnerships/year, unlike partnerships/year, seems to take into account the age and risk category of the partner.
   ## Merge on the number of partners (unadjusted)
