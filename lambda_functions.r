@@ -4,8 +4,6 @@
 ## Description: Load functions to calculate force of infection for compartmental model
 ##################################################
 
-require(reshape2)
-
 ## calcMixMat - sets the proportion of partnerships that come from each age and sexual risk group. It defines two scenarios - random mixing and assortative mixing. Assortative mixing is governed by delta (age and risk).  The weights governing the balance between assortative and random mixing are determined by epsilon. The mixing matrix contains, for each sex, age, and risk category, the proportion of partnerships that come from each sex, age, and risk category of the partner. The sum of the "prop" column in the mixing matrix by sex, age, and risk category should equal 1.
 
 ## adjustPartnerships - this function adjusts the annual number of sexual partnerships such that those reported by men and women are equal.
