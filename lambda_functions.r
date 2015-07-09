@@ -10,6 +10,8 @@ require(reshape2)
 
 ## adjustPartnerships - this function adjusts the annual number of sexual partnerships such that those reported by men and women are equal.
 
+## Calculate lambda - this function calculates the force of infection, which is the probability of HIV acquisition for each HIV negative person in the population.
+
 ## Note that "dt" stands for "data.table" and "time_index" is the iteration of the loop (corresponding to the global variable tt), which represents the discrete time point. Functions that have "time_index" as an argument are time-dependent.
 
 calcMixMat <- function(dt, mix_mat, time_index = tt) {
@@ -18,8 +20,8 @@ calcMixMat <- function(dt, mix_mat, time_index = tt) {
   mix_mat[, prop := 0]
   
   ## Set deltas - these parameters set the mixing distributions for completely assortative mixing. Eventually should move these parameters outside of the function.
-  mix_mat$delta_risk <- ifelse(mix_mat$risk == mix_mat$risk_p, 1, 0)
-  mix_mat$delta_age <- 0
+  mix_mat[, delta_risk := ifelse(risk == risk_p, 1, 0)]
+  mix_mat[, delta_age := 0]
   
   ## Delta age is allowed to vary with time
   if(year <= 2004) {
@@ -63,16 +65,17 @@ calcMixMat <- function(dt, mix_mat, time_index = tt) {
   ## Calculate net mixing matrix as weighted average of assortative and random mixing
   ## Calculate Pr(a), which is the first term in the product.
   setkey(mix_mat, male_p, age_p)
-  mix_mat <- mix_mat[random_mix_age, pa := prop_age_p * epsilons[time_index] + (1 - epsilons[time_index]) * delta_age]
+  mix_mat[random_mix_age, pa := prop_age_p * epsilons[time_index] + (1 - epsilons[time_index]) * delta_age]
   
   ## Calcualte Pr(r|a), which is the second term in the product.
   setkey(mix_mat, male_p, age_p, risk_p)
-  mix_mat <- mix_mat[random_mix_risk_age, pr_a:= prop_risk_by_age_p * epsilons[time_index] + (1 - epsilons[time_index]) * delta_risk]
+  mix_mat[random_mix_risk_age, pr_a:= prop_risk_by_age_p * epsilons[time_index] + (1 - epsilons[time_index]) * delta_risk]
   
   ## Multiply together to get the mixing matrix
   mix_mat[, prop := pa * pr_a]
 
   ## Clean up the workspace
+  dt[, c("partners", "sex_total", "sex_age_total") := NULL]
   mix_mat[, c("pa", "pr_a", "delta_age", "delta_risk") := NULL]
   rm(random_mix_age, random_mix_risk_age)
   
