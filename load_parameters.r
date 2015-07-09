@@ -74,7 +74,27 @@ acts <- fread("data/acts_per_year.csv")
 ## Per-act probability of HIV transmission by viral load of partner
 baseline <- 0.0006 ## Baseline probability of HIV transmission (VL < 1000 copies/mL)
 trans_probs <- fread("data/transmission_probabilities.csv")
-trans_probs[, beta := baseline * scalar]
+trans_probs[, chi := baseline * scalar]
+
+## Calculate per-partnership probability of HIV transmission per year.  Depends on risk group of HIV-negative partner and viral load of HIV positive partner.
+betas <- data.table(expand.grid(male, risk, vl))
+setattr(betas, 'names', c("male", "risk", "vl"))
+
+## Join transition probabilities per act
+setkey(betas, vl)
+setkey(trans_probs, vl)
+betas[trans_probs, chi := chi]
+
+## Join sexual acts per year per partnership
+setkey(acts, male, risk)
+setkey(betas, male, risk)
+betas[acts, acts := acts]
+
+## Note that the vl variable is actually the viral load of the partner
+setnames(betas, "vl", "vl_p")
+
+## Calculate transmission probability per partnership per year
+betas[, transmission_risk := 1 - (1 - chi) ^ acts]
 
 ## Risk reduction for HIV-negative partner based on intervention usage
 risk_reduction <- fread("data/risk_reduction.csv")
