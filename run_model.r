@@ -33,7 +33,7 @@ source("demography_functions.r")
 source("progressDisease.r")
 source("seedInfections.r")
 source("riskAdjust.r")
-# source("lambda_functions.r)
+source("lambda_functions.r")
 
 ## Load input epidemiological parameters
 source("load_parameters.r")
@@ -74,9 +74,17 @@ for(tt in 1:nsteps) {
   progressDisease(pop)
   
   ## Transmission
-  calcMixMat(pop, tt) ## Sets up the mixing matrix
+  ## Calculate the mixing matrix
+  calcMixMat(pop, mixing_matrix, tt)
   
-  # calcLambda(pop)
+  ## Calculate adjusted partnerships per year
+  adjustPartnerships(pop, mixing_matrix) 
+  
+  ## Calculate lambda
+  calcLambda(pop, mixing_matrix, adjusted_partners)
+  
+  ## Transmit infections
+  # transmit(dt, lambda_mat)
   
   
   # Compute end-of-year population and set difference back to zero for next iteration of loop
