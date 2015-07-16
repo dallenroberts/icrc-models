@@ -128,6 +128,8 @@ adjustPartnerships <- function(dt, mix_mat) {
   ## Note that superassigment operator here - for now (for debugging) we want adjusted_partners in the parent environment.  We can figure out later a way to merge some of the lambda_functions together so we don't need to keep track of disc in the run_model environment.
   adjusted_partners <<- disc[, .(male, age, risk, age_p, risk_p, adjusted_partners)]
   
+  ## Clean up
+  mix_mat[, partners := NULL]
 }
 
 ## Calculate lambda (force of infection) for each individual. 
