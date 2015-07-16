@@ -71,7 +71,7 @@ for(tt in 1:nsteps) {
   agePop(pop)
   
   ## Disease progression
-  progressDisease(pop)
+  progressDisease(pop, tstep)
   
   ## Transmission
   ## Calculate the mixing matrix
