@@ -8,7 +8,7 @@
 
 ## adjustPartnerships - this function adjusts the annual number of sexual partnerships such that those reported by men and women are equal.
 
-## Calculate lambda - this function calculates the force of infection, which is the probability of HIV acquisition for each HIV negative person in the population.
+## calcLambda - this function calculates the force of infection, which is the probability of HIV acquisition for each HIV negative person in the population. To do so, we first must expand the mixing matrix by viral loads of the partners, since transmission probabilities are a function of the sex and risk status of the HIV-negative partner and the viral load of the HIV-positive partner. We then merge on the transmission risks (betas) to the expanded mixing matrix (hereafter referred to as "lambda_mat"). The expanded mixing matrix is collapsed by weighting the transmission risk by the probability of encountering an HIV-positive partner in that viral load category (note that this is relevant for vl = 0, which includes both HIV negative and HIV+ on ART) within each age/sex/risk partnership, which is just the proportion of the total population in that age/sex/risk category that is HIV + with viral load v'. This is the per-partnership per year risk of transmission (from the partner to the individual). We then calculate the per-individual per-year risk of transmission by including the number of partnerships that individual has. We then collapse across partnerships to get each individual's risk of infection. This does not include the effect of preventive interventions for the HIV-negative individual, such as circumcision, condom usage, or PrEP. 
 
 ## Note that "dt" stands for "data.table" and "time_index" is the iteration of the loop (corresponding to the global variable tt), which represents the discrete time point. Functions that have "time_index" as an argument are time-dependent.
 
@@ -134,12 +134,46 @@ adjustPartnerships <- function(dt, mix_mat) {
 
 ## Calculate lambda (force of infection) for each individual. 
 calcLambda <- function(dt, mix_mat, adj_parts) {
-#   dt <- copy(pop)
-#   mix_mat <- copy(mixing_matrix)
-#   adj_parts <- copy(adjusted_partners)
   
+  ## Multiply mixing matrix by adjusted partnership matrix to get number of partners per person per year in each possible partnership type
+  setkey(mix_mat, male, age, risk, age_p, risk_p)
+  setkey(adj_parts, male, age, risk, age_p, risk_p)
+  mix_mat[adj_parts, adjusted_partners := adjusted_partners * prop]
   
+  ## Expand mixing matrix by viral load of partner
+  lambda_mat <- rbindlist(lapply(0:5, function(x, d) data.table(d, vl_p = x), d = mix_mat))
   
+  ## Merge on transmission probabilities for each partnership
+  setkey(lambda_mat, male, risk, vl_p)
+  setkey(betas, male, risk, vl_p)
+  lambda_mat[betas, transmission_risk := transmission_risk]
+  
+  ## Calculate number HIV + people in each viral load category by sex, age, and risk
+  vl_prev <- dt[hiv == 1, .(vl_count = sum(count)), by = list(male, age, risk, vl)]
+  
+  ## Calculate total number of people in each sex, age, and risk category
+  total_counts <- dt[, .(total = sum(count)), by = list(male, age, risk)]
+  setkey(total_counts, male, age, risk)
+  setkey(vl_prev, male, age, risk)
+  vl_prev[total_counts, total := total]
+  setnames(vl_prev, c("male", "age", "risk", "vl"), c("male_p", "age_p", "risk_p", "vl_p"))
+  setkey(vl_prev, male_p, age_p, risk_p, vl_p)
+  
+  ## Merge on counts of people in each partnership/vl category to mixing matrix
+  setkey(lambda_mat, male_p, age_p, risk_p, vl_p)
+  lambda_mat[vl_prev, c("vl_count", "total") := list(vl_count, total)]
+  
+  ## Calculate per-partnership per year risk - weighted average of transmission risk based on counts of HIV+ in each viral load category in each partnership divided by total population (HIV+ and HIV-) in each age/sex/risk category
+  lambda_mat <- lambda_mat[, list(adjusted_partners = adjusted_partners, pp_risk = sum(vl_count * transmission_risk / total)), by = list(male, age, risk, male_p, age_p, risk_p)]
+  
+  ## Multiply number of partners per person per year in each possible partnership type by the per-partnership per year transmission risk. Note that this formula differs from Roger's supplemental since we're explicitly using risks here. 
+  lambda_mat[, total_risk := 1 - (1 - pp_risk) ^ adjusted_partners]
+  
+  ## Calculate the risk over all partnerships
+  lambda_mat <<- lambda_mat[, list(lambda = 1 - prod(1 - total_risk)), by = list(male, age, risk)]
+
+  ## Clean up
+  mix_mat[, adjusted_partners := NULL]
   
 }
 
