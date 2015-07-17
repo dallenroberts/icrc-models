@@ -6,6 +6,8 @@
 rm(list = ls())
 
 library(data.table)
+library(ggplot2)
+library(reshape2)
 
 ## Global variables
 year_start <- 1970
