@@ -106,8 +106,6 @@ for(tt in 1:nsteps) {
   calcLambda(pop, mixing_matrix, adjusted_partners)
   
   ## Transmit infections
-  # transmit(dt, lambda_mat)
-  
   transmit(pop, lambda_mat)
   
   # Compute end-of-year population and set difference back to zero for next iteration of loop
