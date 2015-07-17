@@ -50,7 +50,18 @@ addBirths <- function(dt, time_index = tt) {
   
   ## Add births to population
   dt[, diff := diff + births]
+  
+  ## Keep track of new infections
+  hiv_births <- dt[hiv == 1 & age == 1, list(inf_births = sum(births), time = tt), by = list(age, male, risk)]
+  
+  setkey(hiv_births, time, age, male, risk)
+  setkey(incidence, time, age, male, risk)
+  
+  incidence[hiv_births, vert_infections := inf_births]
+  
+  ## Clean up
   dt[, births := NULL]
+
   
 }
 
@@ -60,10 +71,23 @@ subtractDeaths <- function(dt) {
   setkey(dt, age, male)
   dt[back_mort, diff := diff - count * mu]
   
+  ## Keep track
+  non_hiv_deaths <- dt[back_mort, list(hiv = hiv, age = age, male = male, risk = risk, deaths_count = count * mu)]
+  non_hiv_deaths <- non_hiv_deaths[, list(total_deaths = sum(deaths_count), time = tt), by = list(hiv, age, male, risk)]
+  setkey(non_hiv_deaths, time, hiv, age, male, risk)
+  setkey(deaths, time, hiv, age, male, risk)
+  deaths[non_hiv_deaths, non_aids_deaths := total_deaths]
+  
   ## Subtract HIV deaths
   setkey(dt, hiv, age, cd4)
   dt[hiv_mort, diff := diff - count * alpha]
   
+  ## Keep track
+  hiv_deaths <- dt[hiv_mort, list(hiv = hiv, age = age, male = male, risk = risk, deaths_count = count * alpha)]
+  hiv_deaths <- hiv_deaths[, list(total_deaths = sum(deaths_count), time = tt), by = list(hiv, age, male, risk)]
+  setkey(hiv_deaths, time, hiv, age, male, risk)
+  setkey(deaths, time, hiv, age, male, risk)
+  deaths[hiv_deaths, aids_deaths := total_deaths]
 }
 
 
