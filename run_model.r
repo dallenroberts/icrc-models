@@ -93,6 +93,7 @@ for(tt in 1:nsteps) {
   addBirths(pop)
   subtractDeaths(pop)
   agePop(pop)
+  pop[, yy := year]
   
   ## Disease progression
   progressDisease(pop, tstep)
