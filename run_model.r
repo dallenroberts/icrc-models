@@ -108,6 +108,7 @@ for(tt in 1:nsteps) {
   ## Transmit infections
   # transmit(dt, lambda_mat)
   
+  transmit(pop, lambda_mat)
   
   # Compute end-of-year population and set difference back to zero for next iteration of loop
   pop[, c("count", "diff") := list(count + diff, 0)]
