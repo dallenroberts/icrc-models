@@ -164,8 +164,8 @@ calcLambda <- function(dt, mix_mat, adj_parts) {
   lambda_mat[vl_prev, c("vl_count", "total") := list(vl_count, total)]
   
   ## Calculate per-partnership per year risk - weighted average of transmission risk based on counts of HIV+ in each viral load category in each partnership divided by total population (HIV+ and HIV-) in each age/sex/risk category
-  lambda_mat <- lambda_mat[, list(adjusted_partners = adjusted_partners, pp_risk = sum(vl_count * transmission_risk / total)), by = list(male, age, risk, male_p, age_p, risk_p)]
-  
+  lambda_mat <- lambda_mat[, list(pp_risk = sum(vl_count * transmission_risk / total), adjusted_partners = median(adjusted_partners)), by = list(male, age, risk, male_p, age_p, risk_p)]
+
   ## Multiply number of partners per person per year in each possible partnership type by the per-partnership per year transmission risk. Note that this formula differs from Roger's supplemental since we're explicitly using risks here. 
   lambda_mat[, total_risk := 1 - (1 - pp_risk) ^ adjusted_partners]
   
