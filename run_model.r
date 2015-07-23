@@ -12,7 +12,7 @@ library(reshape2)
 ## Global variables
 year_start <- 1970
 year_end <- 2020
-tstep <- 0.25 # years
+tstep <- 0.05 # years - should be a factor of 1
 nsteps <- (year_end - year_start) / tstep + 1
 
 ## Attribute values
@@ -89,11 +89,14 @@ for(tt in 1:nsteps) {
   ## Calculate calendar year
   year <- floor(year_start + (tt - 1) * tstep)
   
+  pop[, yy := year]
+  
   ## Demography
   addBirths(pop)
+
   subtractDeaths(pop)
-  agePop(pop)
-  pop[, yy := year]
+
+  agePop(pop, tstep)
   
   ## Disease progression
   progressDisease(pop, tstep)
