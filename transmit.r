@@ -8,9 +8,9 @@ transmit <- function(dt, lambdas) {
   
   ## Merge on risk reduction interventions.
   dt[, psi := 1]
-  dt[condom == 1, psi := psi * risk_reduction[intervention == "condom", psi]]
-  dt[circ == 1 & male == 1, psi := psi * risk_reduction[intervention == "circ", psi]]
-  dt[prep == 1, psi := psi * risk_reduction[intervention == "prep", psi]]
+  dt[condom == 1, psi := psi * (1 - risk_reduction[intervention == "condom", psi])]
+  dt[circ == 1 & male == 1, psi := psi * (1 - risk_reduction[intervention == "circ", psi])]
+  dt[prep == 1, psi := psi * (1 - risk_reduction[intervention == "prep", psi])]
   
   ## Merge on lambda
   setkey(dt, male, age, risk)
@@ -19,12 +19,12 @@ transmit <- function(dt, lambdas) {
   
   ## Subtract from HIV negative population
   dt[hiv == 0, diff := diff - count * lambda * psi]
-  
+
   ## Keep track of incidence
-  new_infections <- dt[hiv == 0, list(time = tt, new_inf = sum(count * lambda * psi), inc_rate = lambda * psi), by = list(male, age, risk)]
+  new_infections <- dt[hiv == 0, list(time = tt, new_inf = sum(count * lambda * psi)), by = list(male, age, risk)]
   setkey(new_infections, male, age, risk, time)
   setkey(incidence, male, age, risk, time)
-  incidence[new_infections, c("horiz_infections", "rate") := list(new_inf, inc_rate)]
+  incidence[new_infections, horiz_infections := new_inf]
   
   ## Add to HIV positive population
   new_hiv <- copy(dt)

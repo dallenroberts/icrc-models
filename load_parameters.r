@@ -70,13 +70,17 @@ epsilons <- interpolate(breaks= epsilons$year, values = epsilons$epsilon)
 partners <- fread("data/partners_per_year.csv")
 ## Adjust by time-step
 partners[, partners := partners * tstep]
+# Test adjustedment by factor
+partners[, partners := partners * 0.65]
 
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
 theta <- 0.5
 
-## Number of coital acts per partnership
+## Number of coital acts per partnership - I think this should be renamed to acts-per-partnership since I don't think it should be adjusted by the time step.
 acts <- fread("data/acts_per_year.csv") 
-acts[, acts := acts * tstep] 
+# acts[, acts := acts * tstep] 
+## For testing purposes - reduce number of acts by some factor to make prevalence data seem more reasonable
+# acts[, acts := acts/5]
 
 ## Per-act probability of HIV transmission by viral load of partner
 baseline <- 0.0006 ## Baseline probability of HIV transmission (VL < 1000 copies/mL)
@@ -107,4 +111,5 @@ betas[, transmission_risk := 1 - (1 - chi) ^ acts]
 risk_reduction <- fread("data/risk_reduction.csv")
 
 
-
+## For testing purposes - try setting risk proportions to entirely lowest risk group
+# risk_props[, prop := ifelse(risk == 1, 0.99, 0.01)]
