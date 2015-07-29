@@ -22,20 +22,10 @@ calcMixMat <- function(dt, mix_mat, time_index = tt) {
   mix_mat[, delta_age := 0]
   
   ## Delta age is allowed to vary with time
-  if(year <= 2004) {
-    
-    mix_mat[age == age_p, delta_age := 0.3]
-    mix_mat[male == 0 & age == age_p - 1, delta_age := 0.7]
-    mix_mat[male == 1 & age == age_p + 1, delta_age := 0.7]
-    
-  } else {
-    
-    mix_mat[age == age_p, delta_age := 0.7]
-    mix_mat[male == 0 & age == age_p - 1, delta_age := 0.3]
-    mix_mat[male == 1 & age == age_p + 1, delta_age := 0.3]
-    
-  }
-  
+  mix_mat[age == age_p, delta_age := deltas[time_index]]
+  mix_mat[male == 0 & age == age_p - 1, delta_age := 1 - deltas[time_index]]
+  mix_mat[male == 1 & age == age_p + 1, delta_age := 1 - deltas[time_index]]
+
   ## Ensure that probabilities sum to one for youngest males/oldest females
   mix_mat[male == 0 & age == 12 & age_p == 12, delta_age := 1]
   mix_mat[male == 1 & age == 1 & age_p == 1, delta_age := 1]

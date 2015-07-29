@@ -77,6 +77,10 @@ mixing_matrix <- mixing_matrix[mixing_matrix$male != mixing_matrix$male_p]
 
 mixing_matrix$prop <- 0
 
+## Set deltas - these parameters govern the mixing pattern for "completely assortative" mixing, which isn't truly "completely assortative" but is allowed to vary. The delta that gets loaded here is the proportion of partnerships that are with the same age group. 1-delta is the proportion that are with the age group one above (females) or below (males).
+deltas <- fread("data/deltas.csv")
+deltas <- interpolate(breaks = deltas$year, values = deltas$delta)
+
 ## Set epsilons - these parameters govern the extent to which mixing is random or assortative. Note that we could break these out separately by for epsilon_age and epsilon_risk.
 epsilons <- fread("data/epsilons.csv")
 epsilons <- interpolate(breaks= epsilons$year, values = epsilons$epsilon)
