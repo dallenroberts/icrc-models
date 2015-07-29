@@ -156,8 +156,11 @@ prevalence[is.na(prev), prev := 0]
 risks <- population[, list(size = sum(pop_size)), by = list(risk, yy)]
 
 ## Population size
-pop_plot <- ggplot(population_size, aes(x = yy, y = total_size)) +
+kzn_pop <- fread("data/kzn_population.csv")
+zaf_pop <- fread("data/zaf_population.csv")
+pop_plot <- ggplot(data = population_size, aes(x = yy, y = total_size)) +
     geom_line(aes(colour = factor(male))) +
+    geom_point(data = kzn_pop, aes(x = year, y = pop, colour = factor(male))) +
     facet_wrap(~age)
 
 ## HIV prevalence
