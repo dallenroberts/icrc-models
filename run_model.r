@@ -38,6 +38,7 @@ source("seedInfections.r")
 source("riskAdjust.r")
 source("lambda_functions.r")
 source("transmit.r")
+source("distributeART.r")
 
 ## Load input epidemiological parameters
 source("load_parameters.r")
@@ -93,6 +94,9 @@ for(tt in 1:nsteps) {
   
   ## Calculate calendar year
   year <- floor(year_start + (tt - 1) * tstep)
+  
+  ## Distribute ART coverage
+  distributeART(pop, tt)
   
   ## Demography
   addBirths(pop)
