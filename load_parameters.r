@@ -95,9 +95,8 @@ partners[, partners := partners * 0.65]
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
 theta <- 0.5
 
-## Number of coital acts per partnership - I think this should be renamed to acts-per-partnership since I don't think it should be adjusted by the time step.
-acts <- fread("data/acts_per_year.csv") 
-# acts[, acts := acts * tstep] 
+## Number of coital acts per partnership 
+acts <- fread("data/acts_per_partnership.csv")
 ## For testing purposes - reduce number of acts by some factor to make prevalence data seem more reasonable
 # acts[, acts := acts/5]
 
