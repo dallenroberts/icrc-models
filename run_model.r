@@ -12,7 +12,7 @@ library(reshape2)
 ## Global variables
 year_start <- 1970
 year_end <- 2020
-tstep <- 0.05 # years
+tstep <- 0.01 # years
 nsteps <- (year_end - year_start) / tstep + 1
 
 ## Attribute values
