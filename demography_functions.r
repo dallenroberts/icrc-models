@@ -14,17 +14,17 @@ addBirths <- function(dt, time_index = tt) {
   ## Parameters (move these outside)
   nncirc_prop <- 0.1 ## Neonatal circumcision prevalence
   
-  setkey(fert, age, male, cd4)
-  setkey(dt, age, male, cd4)
+  setkey(fert, age, male, cd4, art)
+  setkey(dt, age, male, cd4, art)
   
   ## All births
   dt[fert, births := count * gamma]
   
-  ## Calculate births from uninfected mothers
-  births_from_neg <- dt[hiv == 0, sum(births, na.rm = TRUE)]
+  ## Calculate births from uninfected mothers. Count mothers on ART as "negatives"
+  births_from_neg <- dt[hiv == 0 | art == 1, sum(births, na.rm = TRUE)]
   
   ## Calculate  births from infected mothers
-  births_from_pos <- dt[hiv == 1, sum(births, na.rm = TRUE)]
+  births_from_pos <- dt[hiv == 1 & art == 0, sum(births, na.rm = TRUE)]
   
   ## Calculate number of HIV+ births
   pos_births <- births_from_pos * vert_trans[time_index]
@@ -36,8 +36,8 @@ addBirths <- function(dt, time_index = tt) {
   dt[, births := 0]
   
   ## Distribute births added by sex
-  dt[hiv == 0 & age == 1 & vl == 0 & cd4 == 0 & prep == 0 & condom == 0, births := neg_births * 0.5]
-  dt[hiv == 1  & age == 1 & vl == 1 & cd4 == 1 & prep == 0 & condom == 0, births := pos_births * 0.5]
+  dt[hiv == 0 & age == 1 & vl == 0 & cd4 == 0 & prep == 0 & condom == 0 & art == 0, births := neg_births * 0.5]
+  dt[hiv == 1  & age == 1 & vl == 1 & cd4 == 1 & prep == 0 & condom == 0 & art == 0, births := pos_births * 0.5]
   
   ## Distribute births added by circumcision
   dt[male == 0 & circ == 1, births := 0]
@@ -79,7 +79,7 @@ subtractDeaths <- function(dt) {
   deaths[non_hiv_deaths, non_aids_deaths := total_deaths]
   
   ## Subtract HIV deaths
-  setkey(dt, hiv, age, cd4)
+  setkey(dt, hiv, age, cd4, art)
   dt[hiv_mort, diff := diff - count * alpha]
   
   ## Keep track

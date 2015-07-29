@@ -9,9 +9,19 @@
 require(data.table)
 
 init_pop <- fread("data/initial_populations.csv")
-init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model
-init_pop[, c("hiv", "cd4", "vl", "circ", "prep", "condom") := 0]
-setkey(init_pop, hiv, age, male, cd4, vl, circ, prep, condom)
+init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model - I think this is saying that the population in 1970 should be about 80% of that in 1985
+init_pop[, c("hiv", "cd4", "vl", "circ", "prep", "condom", "art") := 0]
+setkey(init_pop, hiv, age, male, cd4, vl, circ, prep, condom, art)
+
+## ART coverage
+art_coverage <- fread("data/art_coverage.csv")
+
+art_cov <- lapply(sort(unique(art_coverage$cd4)), function(cd4_ind) {
+  
+  df <- art_coverage[cd4 == cd4_ind]
+  interpolate(breaks = df$year, values = df$prop_art)
+})
+rm(art_coverage)
 
 ## Proportion of population in each risk group (by age)
 risk_props <- fread("data/risk_proportions.csv")
@@ -21,12 +31,14 @@ setkey(risk_props, age, male, risk)
 fert <- fread("data/base_fertility_rate.csv")
 
 ## Add effect modification by CD4 count
-fert <- fert[, .(age, male, gamma, cd4 = rep(0:5, each = 12))]
+fert <- fert[, .(art, age, male, gamma, cd4 = rep(0:5, each = 12))]
 
-## Add these fertility coefficients - need to confirm this with Roger because the models and the supplementary are contradictory
+## Add these fertility coefficients
 fert_coeffs <- data.table(cd4 = seq(0, 5), coeff = c(1, 1, 0.59, 0.59, 0.42, 0.42))
-setkey(fert_coeffs, cd4)
-setkey(fert, cd4)
+fert_coeffs <- rbindlist(lapply(0:1, function(x, d) data.table(d, art = x), d = fert_coeffs))
+fert_coeffs[art == 1, coeff := 1] ## No reduction in fertility for mothers on ART
+setkey(fert_coeffs, cd4, art)
+setkey(fert, cd4, art)
 fert[fert_coeffs, gamma := gamma * coeff]
 rm(fert_coeffs)
 
@@ -37,19 +49,22 @@ fert[, gamma := 1 - exp(-gamma * tstep)]
 vert_trans <- fread("data/vertical_transmission.csv")
 vert_trans <- interpolate(breaks = vert_trans$year, values = vert_trans$vert)
 
-## Background mortality (non-HIV) by age and sex
+## Background mortality (non-HIV) by age and sex. These are per-year mortality rates.
 back_mort <- fread("data/background_mortality.csv")
 back_mort[, mu := 1 - exp(-mu * tstep)] # Adjust for time step and convert to risk
 setkey(back_mort, age, male)
 
 ## HIV-relative mortality
 hiv_mort <- fread("data/hiv_mortality.csv")
+hiv_mort <- rbindlist(lapply(0:1, function(x, d) data.table(d, art = x), d = hiv_mort))
+hiv_mort[art == 1, alpha := 0]
 hiv_mort[, c("hiv", "alpha") := list(1, 1 - exp(-alpha * tstep))]
-setkey(hiv_mort, hiv, age, cd4)
+setkey(hiv_mort, hiv, age, cd4, art)
 
 ## Disease progression - cd4_duration and vl_duration are average duration spent in that CD4 or VL category (respectively) in years
 dis_prog <- fread("data/disease_progression.csv")
 dis_prog$hiv <- 1
+dis_prog$art <- 0
 
 ## Initialize mixing matrix.
 mixing_matrix <- as.data.table(expand.grid(male, age, risk, male, age, risk))
@@ -82,16 +97,16 @@ acts <- fread("data/acts_per_year.csv")
 ## For testing purposes - reduce number of acts by some factor to make prevalence data seem more reasonable
 # acts[, acts := acts/5]
 
-## Per-act probability of HIV transmission by viral load of partner
+## Per-act probability of HIV transmission by viral load of partner. Note that ART risk reduction is built in here. We might want to consider moving it 
 baseline <- 0.0006 ## Baseline probability of HIV transmission (VL < 1000 copies/mL)
 trans_probs <- fread("data/transmission_probabilities.csv")
 trans_probs[, chi := baseline * scalar]
 
 ## Calculate per-partnership probability of HIV transmission per year.  Depends on risk group of HIV-negative partner and viral load of HIV positive partner.
-betas <- data.table(expand.grid(male, risk, vl))
-setattr(betas, 'names', c("male", "risk", "vl"))
+betas <- data.table(expand.grid(male, risk, vl, art))
+setattr(betas, 'names', c("male", "risk", "vl", "art"))
 
-## Join transition probabilities per act
+## Join transmission probabilities per act
 setkey(betas, vl)
 setkey(trans_probs, vl)
 betas[trans_probs, chi := chi]
@@ -101,15 +116,14 @@ setkey(acts, male, risk)
 setkey(betas, male, risk)
 betas[acts, acts := acts]
 
-## Note that the vl variable is actually the viral load of the partner
-setnames(betas, "vl", "vl_p")
+## Note that the vl and art variables actually correspond to the partner
+setnames(betas, c("vl", "art"), c("vl_p", "art_p"))
 
 ## Calculate transmission probability per partnership per time step
 betas[, transmission_risk := 1 - (1 - chi) ^ acts]
 
+## Risk reduction for ART usage in HIV positive partner
+betas[art_p == 1, transmission_risk := transmission_risk * 0.08]
+
 ## Risk reduction for HIV-negative partner based on intervention usage
 risk_reduction <- fread("data/risk_reduction.csv")
-
-
-## For testing purposes - try setting risk proportions to entirely lowest risk group
-# risk_props[, prop := ifelse(risk == 1, 0.99, 0.01)]

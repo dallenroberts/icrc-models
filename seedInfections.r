@@ -15,6 +15,6 @@ seedInfections <- function(dt, prop) {
   N <- sum(dt$count)
   
   ## Distribute evenly among males and females
-  dt[hiv == 1 & risk == 2 & cd4 == 1 & vl == 1 & circ == 0 & prep == 0 & condom == 0 & ((male == 1 & age == 6 ) | (male == 0 & age == 5)), count := N * prop / 2]
+  dt[hiv == 1 & risk == 2 & cd4 == 1 & vl == 1 & circ == 0 & prep == 0 & condom == 0 & art == 0 & ((male == 1 & age == 6 ) | (male == 0 & age == 5)), count := N * prop / 2]
   
 }

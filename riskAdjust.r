@@ -9,7 +9,7 @@
 riskAdjust <- function(dt) {
   
   ## Sums the population across risk categories for each compartment
-  dt[, c("risk", "sum") := list(risk, sum(count)), by = .(hiv, age, male, cd4, vl, circ, prep, condom)]
+  dt[, c("risk", "sum") := list(risk, sum(count)), by = .(hiv, age, male, cd4, vl, circ, prep, condom, art)]
   
   ## Multiplies the summed population by the risk proportions defined in the initial parameters
   setkey(dt, age, male, risk)

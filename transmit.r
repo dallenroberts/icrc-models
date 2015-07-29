@@ -32,7 +32,7 @@ transmit <- function(dt, lambdas) {
   new_hiv[, c("hiv", "new_infections") := list(1, count * lambda * psi)]
   
   ## Seed new HIV infections in vl = 1 and cd4 = 1
-  new_hiv <- new_hiv[, list(new_infections = sum(new_infections)), by = list(hiv, age, male, risk, circ, prep, condom)]
+  new_hiv <- new_hiv[, list(new_infections = sum(new_infections)), by = list(hiv, age, male, risk, circ, prep, condom, art)]
   new_hiv[, c("cd4", "vl") := 1]
   setkeyv(new_hiv, all_keys)
   setkeyv(dt, all_keys)

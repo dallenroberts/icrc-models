@@ -20,14 +20,15 @@ hiv <- c(0, 1)
 age <- seq(1, 12)
 male <- c(0, 1)
 risk <- seq(1, 3)
-cd4 <- seq(0, 5) ## For now CD4/VL = 0 means not applicable (susceptible or on treatment)
+cd4 <- seq(0, 5) ## CD4/VL = 0 right now means that they are uninfected
 vl <- seq(0, 5)
 circ <- c(0, 1)
 prep <- c(0, 1)
 condom <- c(0, 1)
+art <- c(0, 1)
 
 ## Variable for all of the dimensions in our model.  Usefully for switching the data.table keys
-all_keys <- c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom")
+all_keys <- c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom", "art")
 
 ## Source functions
 source("interpolate.r")
@@ -43,13 +44,13 @@ source("load_parameters.r")
 
 ## Initialize population matrix
 pop <- as.data.table(expand.grid(sapply(all_keys, get)))
-setattr(pop, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom"))
+setattr(pop, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom", "art"))
 pop$count <- 0
 pop$diff <- 0
 
 ## Data tables for statistics
-population <- as.data.table(expand.grid(hiv, age, male, risk, cd4, vl, circ, prep, condom, seq(year_start, year_end)))
-setattr(population, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom", "yy"))
+population <- as.data.table(expand.grid(hiv, age, male, risk, cd4, vl, circ, prep, condom, art, seq(year_start, year_end)))
+setattr(population, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom", "art", "yy"))
 population[, pop_size := 0]
 
 
@@ -79,7 +80,7 @@ for(tt in 1:nsteps) {
 
   if(tt == 1) {
     ## Add intial populations.  Initially all are susceptible. 
-    setkey(pop, hiv, age, male, cd4, vl, circ, prep, condom)
+    setkey(pop, hiv, age, male, cd4, vl, circ, prep, condom, art)
     pop[init_pop, count := pop]
     
     ## Distribute by risk group

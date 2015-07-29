@@ -142,29 +142,31 @@ calcLambda <- function(dt, mix_mat, adj_parts) {
   
   ## Expand mixing matrix by viral load of partner
   lambda_mat <- rbindlist(lapply(0:5, function(x, d) data.table(d, vl_p = x), d = mix_mat))
+  ## Expand mixing matrix by ART status of partner
+  lambda_mat <- rbindlist(lapply(0:1, function(x, d) data.table(d, art_p = x), d = lambda_mat))
   
   ## Merge on transmission probabilities for each partnership
-  setkey(lambda_mat, male, risk, vl_p)
-  setkey(betas, male, risk, vl_p)
+  setkey(lambda_mat, male, risk, vl_p, art_p)
+  setkey(betas, male, risk, vl_p, art_p)
   lambda_mat[betas, transmission_risk := transmission_risk]
   
-  ## Calculate number HIV + people in each viral load category by sex, age, and risk
-  vl_prev <- dt[hiv == 1, .(vl_count = sum(count)), by = list(male, age, risk, vl)]
+  ## Calculate number HIV + people in each ART and viral load category by sex, age, and risk
+  art_vl_prev <- dt[hiv == 1, .(art_vl_count = sum(count)), by = list(male, age, risk, vl, art)]
   
   ## Calculate total number of people in each sex, age, and risk category
   total_counts <- dt[, .(total = sum(count)), by = list(male, age, risk)]
   setkey(total_counts, male, age, risk)
-  setkey(vl_prev, male, age, risk)
-  vl_prev[total_counts, total := total]
-  setnames(vl_prev, c("male", "age", "risk", "vl"), c("male_p", "age_p", "risk_p", "vl_p"))
-  setkey(vl_prev, male_p, age_p, risk_p, vl_p)
+  setkey(art_vl_prev, male, age, risk)
+  art_vl_prev[total_counts, total := total]
+  setnames(art_vl_prev, c("male", "age", "risk", "vl", "art"), c("male_p", "age_p", "risk_p", "vl_p", "art_p"))
+  setkey(art_vl_prev, male_p, age_p, risk_p, vl_p, art_p)
   
   ## Merge on counts of people in each partnership/vl category to mixing matrix
-  setkey(lambda_mat, male_p, age_p, risk_p, vl_p)
-  lambda_mat[vl_prev, c("vl_count", "total") := list(vl_count, total)]
+  setkey(lambda_mat, male_p, age_p, risk_p, vl_p, art_p)
+  lambda_mat[art_vl_prev, c("art_vl_count", "total") := list(art_vl_count, total)]
   
   ## Calculate per-partnership per year risk - weighted average of transmission risk based on counts of HIV+ in each viral load category in each partnership divided by total population (HIV+ and HIV-) in each age/sex/risk category
-  lambda_mat <- lambda_mat[, list(pp_risk = sum(vl_count * transmission_risk / total), adjusted_partners = median(adjusted_partners)), by = list(male, age, risk, male_p, age_p, risk_p)]
+  lambda_mat <- lambda_mat[, list(pp_risk = sum(art_vl_count * transmission_risk / total), adjusted_partners = median(adjusted_partners)), by = list(male, age, risk, male_p, age_p, risk_p)]
 
   ## Multiply number of partners per person per year in each possible partnership type by the per-partnership per year transmission risk. Note that this formula differs from Roger's supplemental since we're explicitly using risks here. 
   lambda_mat[, total_risk := 1 - (1 - pp_risk) ^ adjusted_partners]
