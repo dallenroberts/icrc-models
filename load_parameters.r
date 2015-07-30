@@ -40,6 +40,7 @@ setkey(risk_props, age, male, risk)
 
 ## Fertility
 fert <- fread("data/base_fertility_rate.csv")
+fert[, gamma := gamma * 1.1]
 
 ## Add effect modification by CD4 count
 fert <- fert[, .(art, age, male, gamma, cd4 = rep(0:5, each = 12))]
@@ -100,8 +101,16 @@ epsilons <- interpolate(breaks= epsilons$year, values = epsilons$epsilon)
 partners <- fread("data/partners_per_year.csv")
 ## Adjust by time-step
 partners[, partners := partners * tstep]
-# Test adjustedment by factor
-partners[, partners := partners * 0.65]
+
+# Test adjustment by factor
+partners[age <= 6, partners := partners * 1.05]
+partners[age == 7, partners := partners * 0.6]
+partners[age > 7, partners := partners * 0.4]
+
+# ## Test redistribution of partners by age
+# partners[age < 6, partners := partners * 1.2]
+# partners[age > 6, partners := partners * 0.8]
+
 
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
 theta <- 0.5
@@ -138,6 +147,7 @@ betas[, transmission_risk := 1 - (1 - chi) ^ acts]
 
 ## Risk reduction for ART usage in HIV positive partner
 betas[art_p == 1, transmission_risk := transmission_risk * 0.08]
+
 
 ## Risk reduction for HIV-negative partner based on intervention usage
 risk_reduction <- fread("data/risk_reduction.csv")

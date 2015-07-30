@@ -12,7 +12,7 @@ library(reshape2)
 ## Global variables
 year_start <- 1970
 year_end <- 2020
-tstep <- 0.01 # years
+tstep <- 0.1 # years
 nsteps <- (year_end - year_start) / tstep + 1
 
 ## Attribute values
@@ -101,6 +101,15 @@ for(tt in 1:nsteps) {
   
   ## Distribute condom coverage
   distributeCondoms(pop, tt)
+  
+  ## Optional reduction in background mortality
+  if(year >= 1990) {
+    back_mort[, mu := mu * (100 - 2 * tstep)/100]
+  }
+  
+  ## Optional decrease in fertility
+  # fert[, gamma := gamma * (100 - tstep)/ 100]
+  
   ## Demography
   addBirths(pop)
   subtractDeaths(pop)
@@ -125,8 +134,6 @@ for(tt in 1:nsteps) {
   
   # Compute end-of-year population and set difference back to zero for next iteration of loop
   pop[, c("count", "diff") := list(count + diff, 0)]
-  
-  # sum(pop[hiv == 1, count])
 
   # Adjust population to match risk prevalence
   riskAdjust(pop)
@@ -150,11 +157,11 @@ for(tt in 1:nsteps) {
 
 ## Make some plots
 population_size <- population[, list(total_size = sum(pop_size)), by = list(male, age, yy)]
-prevalence <- population[hiv == 1, list(size = sum(pop_size)), by = list(male, age, yy)]
+age_prevalence <- population[hiv == 1, list(size = sum(pop_size)), by = list(male, age, yy)]
 setkey(population_size, male, age, yy)
-setkey(prevalence, male, age, yy)
-prevalence[population_size, prev := size/total_size]
-prevalence[is.na(prev), prev := 0]
+setkey(age_prevalence, male, age, yy)
+age_prevalence[population_size, prev := size/total_size]
+age_prevalence[is.na(prev), prev := 0]
 
 risks <- population[, list(size = sum(pop_size)), by = list(risk, yy)]
 
@@ -167,9 +174,18 @@ pop_plot <- ggplot(data = population_size, aes(x = yy, y = total_size)) +
     facet_wrap(~age)
 
 ## HIV prevalence
-prev_plot <- ggplot(prevalence, aes(x = yy, y = prev)) +
+total_prev <- fread("data/total_prevalence.csv")
+age_prev <- fread("data/age_specific_prevalence.csv")
+prev_plot <- ggplot(age_prevalence, aes(x = yy, y = prev)) +
   geom_line(aes(group = male, colour = factor(male))) +
+  geom_point(data = age_prev, aes(x = year, y = prevalence, colour = factor(male))) +
   facet_wrap(~age) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2))
+
+overall_prev <- age_prevalence[age > 3 & age <= 10, list(total_prev = sum(size) / sum(size / prev)), by = list(yy)]
+total_prev_plot <- ggplot(overall_prev, aes(x = yy, y = total_prev)) +
+  geom_line() +
+  geom_point(data = total_prev, aes(x = year, y = prevalence, colour = factor(location))) +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2))
 
 ## HIV incidence
