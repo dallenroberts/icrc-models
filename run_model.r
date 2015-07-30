@@ -39,6 +39,7 @@ source("riskAdjust.r")
 source("lambda_functions.r")
 source("transmit.r")
 source("distributeART.r")
+source("distributeCondoms.r")
 
 ## Load input epidemiological parameters
 source("load_parameters.r")
@@ -98,6 +99,8 @@ for(tt in 1:nsteps) {
   ## Distribute ART coverage
   distributeART(pop, tt)
   
+  ## Distribute condom coverage
+  distributeCondoms(pop, tt)
   ## Demography
   addBirths(pop)
   subtractDeaths(pop)
