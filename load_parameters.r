@@ -25,7 +25,7 @@ rm(art_coverage)
 
 ## Condom usage
 condom_coverage <- fread("data/condom_usage.csv")
-condom_coverage[, usage := usage * 0.73] ## Optional bias correction
+# condom_coverage[, usage := usage * 0.73] ## Optional bias correction
 condom_coverage <- condom_coverage[order(condom_coverage$year), ]
 condom_cov <- lapply(sort(unique(condom_coverage$age)), function(age_cat) {
   
@@ -103,9 +103,9 @@ partners <- fread("data/partners_per_year.csv")
 partners[, partners := partners * tstep]
 
 # Test adjustment by factor
-partners[age <= 6, partners := partners * 1.05]
-partners[age == 7, partners := partners * 0.6]
-partners[age > 7, partners := partners * 0.4]
+# partners[age <= 6, partners := partners * 1.05]
+# partners[age == 7, partners := partners * 0.6]
+# partners[age > 7, partners := partners * 0.4]
 
 # ## Test redistribution of partners by age
 # partners[age < 6, partners := partners * 1.2]
