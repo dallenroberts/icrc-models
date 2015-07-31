@@ -10,7 +10,13 @@
 
 interpolate <- function(breaks, values, step_size = tstep, start = year_start, end = year_end) {
   
-  smoothed <- rep(0, (year_end - year_start)/ step_size + 1)
+#   breaks <- deltas$year
+#   values <- deltas$delta
+#   step_size = tstep
+#   start = year_start
+#   end = year_end
+#   
+  smoothed <- rep(0, (year_end - year_start + 1)/ step_size)
   
   ## Checks
   if(!is.numeric(breaks) | !is.numeric(values) | !is.numeric(step_size)) stop("Error: breaks, values, and steps must both be numeric vectors")
@@ -20,24 +26,26 @@ interpolate <- function(breaks, values, step_size = tstep, start = year_start, e
   
   ## Starting values
   if(breaks[1] != year_start) {
-    smoothed[1:((breaks[1] - year_start)/step_size + 1)] <- values[1]
+    smoothed[1:((breaks[1] - year_start)/step_size)] <- values[1]
   }
   
   ## Ending values
   if(breaks[length(breaks)] != year_end) {
     smoothed[((breaks[length(breaks)] - year_start) / step_size + 1):length(smoothed)] <- values[length(values)] 
     
+  } else {
+    smoothed[(length(smoothed) - 1/step_size + 1):length(smoothed)] <- values[length(values)]
   }
   
   ## Interpolated values
   for(ii in 1:(length(values) - 1)) {
     
     ## Add specified break values
-    smoothed[(breaks[ii] - year_start)/step_size + 1] <- values[ii]
+    smoothed[((breaks[ii] - year_start)/step_size + 1)] <- values[ii]
     
     ## Interpolate between specified break values
-    slope <- (values[ii + 1] - values[ii])/((breaks[ii + 1] - breaks[ii])/step_size + 1)
-    smoothed[((breaks[ii] - year_start)/step_size + 2):((breaks[ii + 1] - year_start)/step_size )] <- values[ii] + slope * seq(1, ((breaks[ii + 1] - breaks[ii])/step_size - 1))
+    slope <- (values[ii + 1] - values[ii])/((breaks[ii + 1] - breaks[ii])/step_size - 1)
+    smoothed[((breaks[ii] - year_start)/step_size + 2):((breaks[ii + 1] - year_start)/step_size)] <- values[ii] + slope * seq(1, ((breaks[ii + 1] - breaks[ii])/step_size - 1))
   }
   
   return(smoothed)
