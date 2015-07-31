@@ -40,10 +40,10 @@ setkey(risk_props, age, male, risk)
 
 ## Fertility
 fert <- fread("data/base_fertility_rate.csv")
-fert[, gamma := gamma * 1.1]
 
 ## Add effect modification by CD4 count
-fert <- fert[, .(art, age, male, gamma, cd4 = rep(0:5, each = 12))]
+fert <- rbindlist(lapply(0:5, function(x, d) data.table(d, cd4 = x), d = fert))
+fert <- rbindlist(lapply(0:1, function(x, d) data.table(d, art = x), d = fert))
 
 ## Add these fertility coefficients
 fert_coeffs <- data.table(cd4 = seq(0, 5), coeff = c(1, 1, 0.59, 0.59, 0.42, 0.42))
