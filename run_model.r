@@ -11,7 +11,7 @@ library(reshape2)
 ## Run name
 date <- Sys.Date()
 name <- "defaults"
-dir.create(paste0("output/", date))
+dir.create(paste0("output/", date), recursive = TRUE)
 
 ## Global variables
 year_start <- 1970
@@ -171,5 +171,8 @@ for(tt in 1:nsteps) {
 }
 
 ## Save results
-save(population, births, deaths, incidence, interventions, dis_dist, tstep, year_start, year_end, file = paste("output/", date, "/", name, ".RData", sep = ""))
+save(population, births, deaths, incidence, interventions, dis_dist, tstep, year_start, year_end, date, name, file = paste("output/", date, "/", name, ".RData", sep = ""))
+
+## Plot results
+source("plot_results.r")
 
