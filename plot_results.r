@@ -141,16 +141,29 @@ age_prev_plot <- ggplot(data = age_prev, aes(x = year_exact, y = prev)) +
 
 ## HIV Incidence
 ## Total
-## By Age
-incidence <- incidence[, list(infections = sum(horiz_infections + vert_infections)), by = list(age, male, year_exact, year)]
+total_incidence <- incidence[, list(infections = sum(horiz_infections + vert_infections)), by = list(year, year_exact, male)]
+setkey(total_incidence, male, year_exact, year)
+setkey(total_pop, male, year_exact, year)
+total_incidence[total_pop, denom := total]
+total_incidence <- total_incidence[, list(incidence_rate = sum(infections)/sum(denom * tstep)), by = list(year, male)]
 
-setkey(incidence, age, year_exact, male)
+incidence_rate_plot <- ggplot(data = total_incidence, aes(x = year, y = incidence_rate * 100)) +
+  geom_line(aes(colour = male)) +
+  sexColors + 
+  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  xlab("Year") + ylab("Incidence rate (%)")
+
+
+## By Age
+age_incidence <- incidence[, list(infections = sum(horiz_infections + vert_infections)), by = list(age, male, year_exact, year)]
+
+setkey(age_incidence, age, year_exact, male)
 setkey(age_pop, age, year_exact, male)
 
-incidence[age_pop, denom := total]
-incidence <- incidence[, list(incidence_rate = sum(infections)/sum(denom * tstep)), by = list(year, age, male)]
+age_incidence[age_pop, denom := total]
+age_incidence <- age_incidence[, list(incidence_rate = sum(infections)/sum(denom * tstep)), by = list(year, age, male)]
 
-incidence_rate_age_plot <- ggplot(data = incidence, aes(x = year, y = incidence_rate * 100)) +
+incidence_rate_age_plot <- ggplot(data = age_incidence, aes(x = year, y = incidence_rate * 100)) +
   geom_line(aes(colour = male)) +
   sexColors + 
   scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
@@ -210,15 +223,6 @@ circ_age_plot <- ggplot(data = circ_age, aes(x = year_exact, y = cov)) +
   facet_wrap(~age)
 
 
-# ## HIV incidence
-# incidence[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep), floor(year_start + (time - 1) * tstep))]
-# incidence[, infections := vert_infections + horiz_infections]
-# 
-# infections <- incidence[, list(yearly_infections = sum(infections)), by = list(age, male, year)]
-# inc_plot <- ggplot(data = infections, aes(x = year, y = yearly_infections)) +
-#   geom_line(aes(colour = factor(male))) +
-#   facet_wrap(~age)
-# 
 
 # 
 # ## Distribution of cd4 and vl
