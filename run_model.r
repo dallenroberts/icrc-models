@@ -16,7 +16,7 @@ dir.create(paste0("output/", date))
 ## Global variables
 year_start <- 1970
 year_end <- 2020
-tstep <- 0.2 # years
+tstep <- 0.1 # years
 nsteps <- (year_end - year_start + 1) / tstep
 
 ## Attribute values
