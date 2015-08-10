@@ -3,9 +3,10 @@
 ## July 30, 2015
 ##################################################
 
-load("output/2015-07-31/defaults.RData")
-
+library(reshape2)
+library(data.table)
 library(ggplot2)
+library(RColorBrewer)
 
 ## Formatting
 population[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep), year_start + (time - 1) * tstep)] 
@@ -31,11 +32,29 @@ interventions$male <- factor(interventions$male, levels = c(0, 1), labels = c("F
 interventions$age <- factor(interventions$age, levels = seq(1, 12), labels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"))
 interventions$hiv <- factor(interventions$hiv, levels = c(0, 1), labels = c("Negative", "Positive"))
 
+stopifnot(dis_dist[cd4 == 0 | vl == 0, sum(total)] == 0) ## No HIV-infected individual should have VL or CD4 = 0 - that's reserved for uninfected (hiv == 0) individuals
+dis_dist <- dis_dist[cd4 != 0 & vl != 0]
+dis_dist[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep), year_start + (time - 1) * tstep)]
+dis_dist$male <- factor(dis_dist$male, levels = c(0, 1), labels = c("Female", "Male"))
+dis_dist$age <- factor(dis_dist$age, levels = seq(1, 12), labels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"))
+dis_dist$cd4 <- factor(dis_dist$cd4, levels = seq(1, 5), labels = c("Acute", "> 500", "350-500", "200-349", "< 200"))
+dis_dist$vl <- factor(dis_dist$vl, levels = seq(1, 5), labels = c("Acute", "<= 1,000", "1,000-10,000", "10,000-50,000", "> 50,000"))
+
+
 ## Plot control
 theme_set(theme_bw())
 colors <- c("blue4", "green4")
 names(colors) <- c("Female", "Male")
 sexColors <- scale_colour_manual(name = "Sex", values = colors)
+
+vl_colors <- rev(brewer.pal(5, "Spectral"))
+names(vl_colors) <- c("Acute", "<= 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
+vlColors <- scale_colour_manual(name = "Viral Load", values = vl_colors)
+
+cd4_colors <- rev(brewer.pal(5, "Spectral"))
+names(cd4_colors) <- c("Acute", "> 500", "350-500", "200-349", "< 200")
+cd4Colors <- scale_colour_manual(name = "CD4", values = cd4_colors)
+
 
 ## Population data
 pop_data <- fread("data/kzn_population.csv")
@@ -222,19 +241,40 @@ circ_age_plot <- ggplot(data = circ_age, aes(x = year_exact, y = cov)) +
   xlab("Year") + ylab("Circumcision Coverage (%)") +
   facet_wrap(~age)
 
+cd4_dist <- dis_dist[, list(size = sum(total)), by = list(age, cd4, year_exact)]
+cd4_dist[, pct := size / sum(size), by = list(age, year_exact)]
+vl_dist <- dis_dist[, list(size = sum(total)), by = list(age, vl, year_exact)]
+vl_dist[, pct := size / sum(size), by = list(age, year_exact)]
 
+cd4_plot <- ggplot(data = cd4_dist, aes(x = year_exact, y = pct * 100, group = cd4)) +
+  geom_line(aes(x = year_exact, y = pct * 100, colour = cd4, position = 'stack')) +
+  cd4Colors +
+   scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
+  xlab("Year") + ylab("Percentage") +
+  facet_wrap(~age) + ggtitle("CD4 Distribution among HIV+")
 
-# 
-# ## Distribution of cd4 and vl
-# cd4_dist <- population[hiv == 1, list(size = sum(pop_size)), by = list(age, cd4, yy)]
-# cd4_dist[, pct := size/sum(size), by = list(age, yy)]
-# vl_dist <- population[hiv == 1, list(size = sum(pop_size)), by = list(age, vl, yy)]
-# vl_dist[, pct := size/sum(size), by = list(age, yy)]
-# 
-# cd4_plot <- ggplot(data = cd4_dist, aes(x = yy, y = pct, group = factor(cd4))) +
-#   geom_line(aes(x = yy, y = pct, colour = factor(cd4), position = 'stack')) +
-#   facet_wrap(~age)
-# 
-# vl_plot <- ggplot(data = vl_dist, aes(x = yy, y = pct, group = factor(vl))) +
-#   geom_line(aes(x = yy, y = pct, colour = factor(vl), position = 'stack')) +
-#   facet_wrap(~age)
+vl_plot <- ggplot(data = vl_dist, aes(x = year_exact, y = pct * 100, group = vl)) +
+  geom_line(aes(x = year_exact, y = pct * 100, colour = vl, position = 'stack')) +
+  vlColors + 
+  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
+  xlab("Year") + ylab("Percentage") +
+  facet_wrap(~age) + ggtitle("Viral Load Distribution among HIV+")
+
+## Save as PDF
+pdf(file = paste0("output/", date, "/", name, ".pdf"), width = 10, height = 8)
+print(total_pop_plot)
+print(age_pop_plot)
+print(birth_rate_age_plot)
+print(death_rate_age_plot)
+print(total_prev_plot)
+print(age_prev_plot)
+print(incidence_rate_plot)
+print(incidence_rate_age_plot)
+print(art_age_plot)
+print(circ_age_plot)
+print(condom_age_plot)
+print(cd4_plot)
+print(vl_plot)
+dev.off()
