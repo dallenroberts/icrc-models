@@ -69,8 +69,9 @@ total_pop_plot <- ggplot(data = total_pop, aes(x = year_exact, y = total / 10000
   geom_line(aes(colour = male)) +
   geom_point(data = total_pop_data, aes(x = year, y = total / 1000000, colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
-  xlab("Year") + ylab("KZN Population (Millions)")
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
+  xlab("Year") + ylab("KZN Population (Millions)") +
+  ggtitle("Total population")
 
 
 ## Age-specific population
@@ -80,9 +81,10 @@ age_pop_plot <- ggplot(data = age_pop, aes(x = year_exact, y = total / 1000000))
   geom_line(aes(colour = male)) +
   geom_point(data = pop_data, aes(x = year, y = pop / 1000000, colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("KZN Population (Millions)") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("Age-specific population")
 
 ## Birth rates
 births <- births[, list(births = sum(num_births)), by = list(age, year_exact, year)]
@@ -96,9 +98,10 @@ births <- births[, list(birth_rate = sum(births)/sum(denom * tstep)), by = list(
 
 birth_rate_age_plot <- ggplot(data = births, aes(x = year, y = birth_rate)) +
     geom_line() +
-    scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+    scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
     xlab("Year") + ylab("Annual birth rate") +
-    facet_wrap(~age)
+    facet_wrap(~age) +
+  ggtitle("Age-specific fertility rates")
 
 ## Death rates
 deaths <- deaths[, list(non_aids_deaths = sum(back_deaths), aids_deaths = sum(hiv_deaths)), by = list(age, male, year_exact, year)]
@@ -110,13 +113,14 @@ deaths[age_pop, denom := total]
 deaths <- deaths[, list(hiv_death_rate = sum(aids_deaths)/sum(denom * tstep), back_death_rate = sum(non_aids_deaths)/sum(denom * tstep)), by = list(year, age, male)]
 
 deaths <- melt(deaths, id.vars = c("age", "year", "male"), measure.vars = c("hiv_death_rate", "back_death_rate"), variable.name = "type", value.name = "rate")
-
+deaths$type <- factor(deaths$type, levels = c("hiv_death_rate", "back_death_rate"), labels = c("HIV", "Background"))
 death_rate_age_plot <- ggplot(data = deaths, aes(x = year, y = rate)) +
   geom_line(aes(colour = male, linetype = type)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("Annual death rate") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("HIV and background age-specific mortality rates")
 
 ## HIV prevalence 15-49
 total_adult_pop <- population[as.numeric(age) > 3 & as.numeric(age) <= 10, list(total = sum(pop_size)), by= list(male, year_exact)] 
@@ -133,7 +137,7 @@ total_prev_plot <- ggplot(data = total_prev, aes(x = year_exact, y = prev)) +
     geom_line(aes(colour = male)) +
     geom_point(data = total_prev_data, aes(x = year, y = prev)) +
     sexColors + 
-    scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+    scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
     xlab("Year") + ylab("HIV Prevalence (%)") +
     ggtitle("HIV Prevalence (15-49)")
 
@@ -154,9 +158,10 @@ age_prev_plot <- ggplot(data = age_prev, aes(x = year_exact, y = prev)) +
   geom_line(aes(colour = male)) +
   geom_point(data = age_prev_data, aes(x = year, y = prev, colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("HIV Prevalence (%)") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("Age-specific HIV prevalence")
 
 ## HIV Incidence
 ## Total
@@ -169,8 +174,9 @@ total_incidence <- total_incidence[, list(incidence_rate = sum(infections)/sum(d
 incidence_rate_plot <- ggplot(data = total_incidence, aes(x = year, y = incidence_rate * 100)) +
   geom_line(aes(colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
-  xlab("Year") + ylab("Incidence rate (%)")
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
+  xlab("Year") + ylab("Incidence rate (%)") +
+  ggtitle("Total HIV incidence")
 
 
 ## By Age
@@ -185,9 +191,10 @@ age_incidence <- age_incidence[, list(incidence_rate = sum(infections)/sum(denom
 incidence_rate_age_plot <- ggplot(data = age_incidence, aes(x = year, y = incidence_rate * 100)) +
   geom_line(aes(colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
-  xlab("Year") + ylab("Incidence rate (%)") +
-  facet_wrap(~age)
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
+  xlab("Year") + ylab("Annual incidence (%)") +
+  facet_wrap(~age) +
+  ggtitle("Age-specific HIV incidence")
 
 ## Intervention coverage
 ## ART
@@ -202,10 +209,11 @@ art_age[is.na(cov), cov := 0]
 art_age_plot <- ggplot(data = art_age, aes(x = year_exact, y = cov)) +
   geom_line(aes(colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
   xlab("Year") + ylab("ART Coverage (%)") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("Age-specific ART coverage")
 
 ## Condoms
 condom_age <- interventions[, list(size = sum(total)), by = list(age, male, year_exact, condom)]
@@ -219,10 +227,11 @@ condom_age[is.na(cov), cov := 0]
 condom_age_plot <- ggplot(data = condom_age, aes(x = year_exact, y = cov)) +
   geom_line(aes(colour = male)) +
   sexColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
   xlab("Year") + ylab("Condom Coverage (%)") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("Age-specific condom usage")
 
 
 ## Circumcision
