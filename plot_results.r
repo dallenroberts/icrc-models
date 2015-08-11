@@ -48,7 +48,7 @@ names(colors) <- c("Female", "Male")
 sexColors <- scale_colour_manual(name = "Sex", values = colors)
 
 vl_colors <- rev(brewer.pal(5, "Spectral"))
-names(vl_colors) <- c("Acute", "<= 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
+names(vl_colors) <- c("Acute", "< 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
 vlColors <- scale_fill_manual(name = "Viral Load", values = vl_colors)
 
 cd4_colors <- rev(brewer.pal(5, "Spectral"))
