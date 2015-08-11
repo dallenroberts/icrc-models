@@ -10,7 +10,7 @@ library(reshape2)
 
 ## Run name
 date <- Sys.Date()
-name <- "low_fertility_moultrie_1990"
+name <- "low_fertility_moultrie_1990_back_mort_reduction"
 dir.create(paste0("output/", date), recursive = TRUE)
 
 ## Global variables
