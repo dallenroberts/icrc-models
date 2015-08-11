@@ -103,13 +103,7 @@ partners <- fread("data/partners_per_year.csv")
 partners[, partners := partners * tstep]
 
 # Test adjustment by factor
-# partners[age <= 6, partners := partners * 1.05]
-# partners[age == 7, partners := partners * 0.6]
-# partners[age > 7, partners := partners * 0.4]
-
-# ## Test redistribution of partners by age
-# partners[age < 6, partners := partners * 1.2]
-# partners[age > 6, partners := partners * 0.8]
+# partners[, partners := partners * 0.9]
 
 
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
