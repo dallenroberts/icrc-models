@@ -6,14 +6,18 @@
 rm(list = ls())
 
 library(data.table)
-library(ggplot2)
 library(reshape2)
 
+## Run name
+date <- Sys.Date()
+name <- "low_fertility_moultrie_1990"
+dir.create(paste0("output/", date), recursive = TRUE)
+
 ## Global variables
-year_start <- 1970
+year_start <- 1980
 year_end <- 2020
 tstep <- 0.1 # years
-nsteps <- (year_end - year_start) / tstep + 1
+nsteps <- (year_end - year_start + 1) / tstep
 
 ## Attribute values
 hiv <- c(0, 1)
@@ -51,28 +55,35 @@ pop$count <- 0
 pop$diff <- 0
 
 ## Data tables for statistics
-population <- as.data.table(expand.grid(hiv, age, male, risk, cd4, vl, circ, prep, condom, art, seq(year_start, year_end)))
-setattr(population, 'names', c("hiv", "age", "male", "risk", "cd4", "vl", "circ", "prep", "condom", "art", "yy"))
+population <- as.data.table(expand.grid(hiv, age, male, seq(1, nsteps)))
+setattr(population, 'names', c("hiv", "age", "male", "time"))
 population[, pop_size := 0]
+setkey(population, time, hiv, age, male)
 
+births <- as.data.table(expand.grid(hiv, age, seq(1, nsteps)))
+setattr(births, 'names', c("hiv", "age", "time"))
+births[, num_births := 0]
 
-# births <- as.data.table(expand.grid(age, male, seq(1, nsteps)))
-# setattr(births, 'names', c("age", "male", "time"))
-# 
-deaths <- as.data.table(expand.grid(hiv, age, male, risk, seq(1, nsteps)))
-setattr(deaths, 'names', c("hiv", "age", "male", "risk", "time"))
-deaths[, c("non_aids_deaths", "aids_deaths") := 0]
+deaths <- as.data.table(expand.grid(hiv, age, male, seq(1, nsteps)))
+setattr(deaths, 'names', c("hiv", "age", "male", "time"))
+deaths[, c("back_deaths", "hiv_deaths") := 0]
 
-incidence <- as.data.table(expand.grid(age, male, risk, seq(1, nsteps)))
-setattr(incidence, 'names', c("age", "male", "risk", "time"))
-incidence[, c("vert_infections", "horiz_infections") := 0]
-
+## Incidence
+incidence <- as.data.table(expand.grid(age, male, seq(1, nsteps)))
+setattr(incidence, 'names', c("age", "male", "time"))
+incidence[, c("horiz_infections", "vert_infections") := 0]
+  
 ## Distribution of CD4 and VL
-dis_dist <- as.data.table(expand.grid(age, male, cd4, vl, seq(1, nsteps)))
-setattr(dis_dist, 'names', c("age", "male", "cd4", "vl", "time"))
+dis_dist <- as.data.table(expand.grid(age, male, cd4, vl, art, seq(1, nsteps)))
+setattr(dis_dist, 'names', c("age", "male", "cd4", "vl", "art", "time"))
+dis_dist[, total := 0]
+setkey(dis_dist, time, age, male, cd4, vl, art)
 
-# art <- c(0, 1)
-# interventions <- as.data.table(expand.grid(age, male, circ, prep, condom, art, seq(1, nsteps)))
+## Interventions
+interventions <- as.data.table(expand.grid(hiv, age, male, art, condom, circ, seq(1, nsteps)))
+setattr(interventions, 'names', c("hiv", "age", "male", "art", "condom", "circ", "time"))
+interventions[, total := 0]
+setkey(interventions, time, hiv, age, male, art, condom, circ)
 
 ## Run model
 for(tt in 1:nsteps) {
@@ -93,6 +104,7 @@ for(tt in 1:nsteps) {
     seedInfections(pop, 0.001) 
   }
   
+  pop[, time := tt]
   ## Calculate calendar year
   year <- floor(year_start + (tt - 1) * tstep)
   
@@ -102,7 +114,23 @@ for(tt in 1:nsteps) {
   ## Distribute condom coverage
   distributeCondoms(pop, tt)
   
-  ## Optional reduction in background mortality
+  ## Calculate statistics
+  ## Populations
+  pop_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, time)]
+  setkey(pop_stats, time, hiv, age, male)
+  population[pop_stats, pop_size := size]
+  
+  ## Disease distribution
+  dis_stats <- pop[hiv == 1, list(size = sum(count)), by = list(art, age, male, cd4, vl, time)]
+  setkey(dis_stats, time, age, male, cd4, vl, art)
+  dis_dist[dis_stats, total := size]
+  
+  ## Intervention coverage
+  int_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, art, condom, circ, time)]
+  setkey(int_stats, time, hiv, age, male, art, condom, circ)
+  interventions[int_stats, total := size]
+  
+  # Optional reduction in background mortality
   if(year >= 1990) {
     back_mort[, mu := mu * (100 - 2 * tstep)/100]
   }
@@ -114,7 +142,6 @@ for(tt in 1:nsteps) {
   addBirths(pop)
   subtractDeaths(pop)
   agePop(pop, tstep)
-  pop[, yy := year]
   
   ## Disease progression
   progressDisease(pop, tstep)
@@ -137,94 +164,15 @@ for(tt in 1:nsteps) {
 
   # Adjust population to match risk prevalence
   riskAdjust(pop)
-  
-  ## Calculate some statistics
-  ## Populations
-  if((year_start + (tt - 1) * tstep) %% 1 == 0) {
-    setkeyv(population, c("yy", all_keys))
-    setkeyv(pop, c("yy", all_keys))
-    population[pop, pop_size := count]
-  }
-  
+
   # Increment time step
   tt <- tt + 1
 
-  # ## HIV prevalence
-  # print(year)
-  # print(pop[age == 5, sum(count)/sum(pop$count[pop$age == 5]), by = hiv])
-  
 }
 
-## Make some plots
-population_size <- population[, list(total_size = sum(pop_size)), by = list(male, age, yy)]
-age_prevalence <- population[hiv == 1, list(size = sum(pop_size)), by = list(male, age, yy)]
-setkey(population_size, male, age, yy)
-setkey(age_prevalence, male, age, yy)
-age_prevalence[population_size, prev := size/total_size]
-age_prevalence[is.na(prev), prev := 0]
+## Save results
+save(population, births, deaths, incidence, interventions, dis_dist, tstep, year_start, year_end, date, name, file = paste("output/", date, "/", name, ".RData", sep = ""))
 
-risks <- population[, list(size = sum(pop_size)), by = list(risk, yy)]
-
-## Population size
-kzn_pop <- fread("data/kzn_population.csv")
-zaf_pop <- fread("data/zaf_population.csv")
-pop_plot <- ggplot(data = population_size, aes(x = yy, y = total_size)) +
-    geom_line(aes(colour = factor(male))) +
-    geom_point(data = kzn_pop, aes(x = year, y = pop, colour = factor(male))) +
-    facet_wrap(~age)
-
-## HIV prevalence
-total_prev <- fread("data/total_prevalence.csv")
-age_prev <- fread("data/age_specific_prevalence.csv")
-prev_plot <- ggplot(age_prevalence, aes(x = yy, y = prev)) +
-  geom_line(aes(group = male, colour = factor(male))) +
-  geom_point(data = age_prev, aes(x = year, y = prevalence, colour = factor(male))) +
-  facet_wrap(~age) +
-  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2))
-
-overall_prev <- age_prevalence[age > 3 & age <= 10, list(total_prev = sum(size) / sum(size / prev)), by = list(yy)]
-total_prev_plot <- ggplot(overall_prev, aes(x = yy, y = total_prev)) +
-  geom_line() +
-  geom_point(data = total_prev, aes(x = year, y = prevalence, colour = factor(location))) +
-  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2))
-
-## HIV incidence
-incidence[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep), floor(year_start + (time - 1) * tstep))]
-incidence[, infections := vert_infections + horiz_infections]
-
-infections <- incidence[, list(yearly_infections = sum(infections)), by = list(age, male, year)]
-inc_plot <- ggplot(data = infections, aes(x = year, y = yearly_infections)) +
-    geom_line(aes(colour = factor(male))) +
-    facet_wrap(~age)
-
-## Deaths
-deaths[is.na(non_aids_deaths), non_aids_deaths := 0]
-deaths[is.na(aids_deaths), aids_deaths := 0]
-
-deaths[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep), floor(year_start + (time - 1) * tstep))]
-deaths_data <- deaths[, list(background = sum(non_aids_deaths), hiv_relative = sum(aids_deaths), total = sum(non_aids_deaths + aids_deaths)), by = list(hiv, age, male, year)]
-
-deaths_data <- melt(deaths_data, id_vars = c("hiv", "age", "male", "year"), measure.vars = c("background", "hiv_relative", "total"), variable.name = "death_type", value.name = "deaths")
-deaths_plot <- ggplot(data = deaths_data, aes(x = year, y = deaths)) +
-    geom_line(aes(colour = factor(male), linetype = death_type)) +
-    facet_wrap(~age + hiv)
-
-hiv_deaths_data <- deaths_data[hiv == 1 & death_type == "hiv_relative"]
-hiv_deaths_plot <- ggplot(data = hiv_deaths_data, aes(x = year, y = deaths)) +
-  geom_line(aes(colour = factor(male))) +
-  facet_wrap(~age)
-
-## Distribution of cd4 and vl
-cd4_dist <- population[hiv == 1, list(size = sum(pop_size)), by = list(age, cd4, yy)]
-cd4_dist[, pct := size/sum(size), by = list(age, yy)]
-vl_dist <- population[hiv == 1, list(size = sum(pop_size)), by = list(age, vl, yy)]
-vl_dist[, pct := size/sum(size), by = list(age, yy)]
-
-cd4_plot <- ggplot(data = cd4_dist, aes(x = yy, y = pct, group = factor(cd4))) +
-  geom_line(aes(x = yy, y = pct, colour = factor(cd4), position = 'stack')) +
-  facet_wrap(~age)
-
-vl_plot <- ggplot(data = vl_dist, aes(x = yy, y = pct, group = factor(vl))) +
-  geom_line(aes(x = yy, y = pct, colour = factor(vl), position = 'stack')) +
-  facet_wrap(~age)
+## Plot results
+source("plot_results.r")
 

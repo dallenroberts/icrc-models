@@ -9,7 +9,7 @@
 require(data.table)
 
 init_pop <- fread("data/initial_populations.csv")
-init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model - I think this is saying that the population in 1970 should be about 80% of that in 1985
+init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model - I think this is saying that the population in 1980 should be about 80% of that in 1985
 init_pop[, c("hiv", "cd4", "vl", "circ", "prep", "condom", "art") := 0]
 setkey(init_pop, hiv, age, male, cd4, vl, circ, prep, condom, art)
 
@@ -25,7 +25,7 @@ rm(art_coverage)
 
 ## Condom usage
 condom_coverage <- fread("data/condom_usage.csv")
-condom_coverage[, usage := usage * 0.73] ## Optional bias correction
+# condom_coverage[, usage := usage * 0.73] ## Optional bias correction
 condom_coverage <- condom_coverage[order(condom_coverage$year), ]
 condom_cov <- lapply(sort(unique(condom_coverage$age)), function(age_cat) {
   
@@ -39,11 +39,11 @@ risk_props <- fread("data/risk_proportions.csv")
 setkey(risk_props, age, male, risk)
 
 ## Fertility
-fert <- fread("data/base_fertility_rate.csv")
-fert[, gamma := gamma * 1.1]
+fert <- fread("data/base_fertility_rate_moultrie_1990.csv")
 
 ## Add effect modification by CD4 count
-fert <- fert[, .(art, age, male, gamma, cd4 = rep(0:5, each = 12))]
+fert <- rbindlist(lapply(0:5, function(x, d) data.table(d, cd4 = x), d = fert))
+fert <- rbindlist(lapply(0:1, function(x, d) data.table(d, art = x), d = fert))
 
 ## Add these fertility coefficients
 fert_coeffs <- data.table(cd4 = seq(0, 5), coeff = c(1, 1, 0.59, 0.59, 0.42, 0.42))
@@ -103,13 +103,7 @@ partners <- fread("data/partners_per_year.csv")
 partners[, partners := partners * tstep]
 
 # Test adjustment by factor
-partners[age <= 6, partners := partners * 1.05]
-partners[age == 7, partners := partners * 0.6]
-partners[age > 7, partners := partners * 0.4]
-
-# ## Test redistribution of partners by age
-# partners[age < 6, partners := partners * 1.2]
-# partners[age > 6, partners := partners * 0.8]
+# partners[, partners := partners * 0.9]
 
 
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
