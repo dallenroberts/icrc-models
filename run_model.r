@@ -10,11 +10,11 @@ library(reshape2)
 
 ## Run name
 date <- Sys.Date()
-name <- "defaults"
+name <- "low_fertility_moultrie_1990"
 dir.create(paste0("output/", date), recursive = TRUE)
 
 ## Global variables
-year_start <- 1970
+year_start <- 1980
 year_end <- 2020
 tstep <- 0.1 # years
 nsteps <- (year_end - year_start + 1) / tstep
@@ -130,11 +130,11 @@ for(tt in 1:nsteps) {
   setkey(int_stats, time, hiv, age, male, art, condom, circ)
   interventions[int_stats, total := size]
   
-  ## Optional reduction in background mortality
-#   if(year >= 1990) {
-#     back_mort[, mu := mu * (100 - 2 * tstep)/100]
-#   }
-#   
+  # Optional reduction in background mortality
+  if(year >= 1990) {
+    back_mort[, mu := mu * (100 - 2 * tstep)/100]
+  }
+  
   ## Optional decrease in fertility
   # fert[, gamma := gamma * (100 - tstep)/ 100]
   
