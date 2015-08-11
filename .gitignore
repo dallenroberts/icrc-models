@@ -2,3 +2,4 @@
 *.Rbuildignore
 data/
 *.Rhistory
+output/
