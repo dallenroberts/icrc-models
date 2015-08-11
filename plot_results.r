@@ -38,7 +38,7 @@ dis_dist[, c("year", "year_exact") := list(floor(year_start + (time - 1) * tstep
 dis_dist$male <- factor(dis_dist$male, levels = c(0, 1), labels = c("Female", "Male"))
 dis_dist$age <- factor(dis_dist$age, levels = seq(1, 12), labels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"))
 dis_dist$cd4 <- factor(dis_dist$cd4, levels = seq(1, 5), labels = c("Acute", "> 500", "350-500", "200-349", "< 200"))
-dis_dist$vl <- factor(dis_dist$vl, levels = seq(1, 5), labels = c("Acute", "<= 1,000", "1,000-10,000", "10,000-50,000", "> 50,000"))
+dis_dist$vl <- factor(dis_dist$vl, levels = seq(1, 5), labels = c("Acute", "< 1,000", "1,000-10,000", "10,000-50,000", "> 50,000"))
 
 
 ## Plot control
@@ -49,11 +49,11 @@ sexColors <- scale_colour_manual(name = "Sex", values = colors)
 
 vl_colors <- rev(brewer.pal(5, "Spectral"))
 names(vl_colors) <- c("Acute", "<= 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
-vlColors <- scale_colour_manual(name = "Viral Load", values = vl_colors)
+vlColors <- scale_fill_manual(name = "Viral Load", values = vl_colors)
 
 cd4_colors <- rev(brewer.pal(5, "Spectral"))
 names(cd4_colors) <- c("Acute", "> 500", "350-500", "200-349", "< 200")
-cd4Colors <- scale_colour_manual(name = "CD4", values = cd4_colors)
+cd4Colors <- scale_fill_manual(name = "CD4", values = cd4_colors)
 
 
 ## Population data
@@ -236,29 +236,28 @@ circ_age[is.na(cov), cov := 0]
 
 circ_age_plot <- ggplot(data = circ_age, aes(x = year_exact, y = cov)) +
   geom_line() +
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
   xlab("Year") + ylab("Circumcision Coverage (%)") +
-  facet_wrap(~age)
+  facet_wrap(~age) +
+  ggtitle("Age-specific circumcision coverage")
 
 cd4_dist <- dis_dist[, list(size = sum(total)), by = list(age, cd4, year_exact)]
 cd4_dist[, pct := size / sum(size), by = list(age, year_exact)]
 vl_dist <- dis_dist[, list(size = sum(total)), by = list(age, vl, year_exact)]
 vl_dist[, pct := size / sum(size), by = list(age, year_exact)]
 
-cd4_plot <- ggplot(data = cd4_dist, aes(x = year_exact, y = pct * 100, group = cd4)) +
-  geom_line(aes(x = year_exact, y = pct * 100, colour = cd4, position = 'stack')) +
+cd4_plot <- ggplot(data = cd4_dist, aes(x = year_exact, y = pct * 100)) +
+  geom_area(aes(x = year_exact, y = pct * 100, fill = cd4, position = 'stack')) +
   cd4Colors +
-   scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
-  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("Percentage") +
   facet_wrap(~age) + ggtitle("CD4 Distribution among HIV+")
 
-vl_plot <- ggplot(data = vl_dist, aes(x = year_exact, y = pct * 100, group = vl)) +
-  geom_line(aes(x = year_exact, y = pct * 100, colour = vl, position = 'stack')) +
+vl_plot <- ggplot(data = vl_dist, aes(x = year_exact, y = pct * 100)) +
+  geom_area(aes(fill = vl, position = 'stack')) +
   vlColors + 
-  scale_x_continuous(limits = c(1970, 2020), breaks = seq(1970, 2020, by = 10)) +
-  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 20)) +
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("Percentage") +
   facet_wrap(~age) + ggtitle("Viral Load Distribution among HIV+")
 
