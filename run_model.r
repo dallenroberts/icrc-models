@@ -10,13 +10,13 @@ library(reshape2)
 
 ## Run name
 date <- Sys.Date()
-name <- "low_fertility_moultrie_1990_back_mort_reduction"
+name <- "low_fertility_dhs_1998_new_partners_smoothed_73_condom_census_init_pop_reduction_95_0005_tstep"
 dir.create(paste0("output/", date), recursive = TRUE)
 
 ## Global variables
 year_start <- 1980
 year_end <- 2020
-tstep <- 0.1 # years
+tstep <- 0.005 # years
 nsteps <- (year_end - year_start + 1) / tstep
 
 ## Attribute values
@@ -132,7 +132,7 @@ for(tt in 1:nsteps) {
   
   # Optional reduction in background mortality
   if(year >= 1990) {
-    back_mort[, mu := mu * (100 - 2 * tstep)/100]
+    back_mort[, mu := mu * (100 - 0.5 * tstep)/100]
   }
   
   ## Optional decrease in fertility
