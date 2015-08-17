@@ -41,7 +41,7 @@ risk_props <- fread("data/risk_proportions.csv")
 setkey(risk_props, age, male, risk)
 
 ## Fertility
-fert <- fread("data/base_fertility_rate_moultrie_1990.csv")
+fert <- fread("data/base_fertility_rate_dhs_1998.csv")
 
 ## Add effect modification by CD4 count
 fert <- rbindlist(lapply(0:5, function(x, d) data.table(d, cd4 = x), d = fert))
