@@ -25,8 +25,9 @@ art_cov <- lapply(sort(unique(art_coverage$cd4)), function(cd4_ind) {
 rm(art_coverage)
 
 ## Condom usage
-condom_coverage <- fread("data/condom_usage.csv")
-# condom_coverage[, usage := usage * 0.73] ## Optional bias correction
+condom_coverage <- fread("data/smoothed_condom_usage.csv")
+condom_coverage[, usage := usage * 0.73] ## Optional bias correction
+# condom_coverage[, usage := usage * 0]
 condom_coverage <- condom_coverage[order(condom_coverage$year), ]
 condom_cov <- lapply(sort(unique(condom_coverage$age)), function(age_cat) {
   
