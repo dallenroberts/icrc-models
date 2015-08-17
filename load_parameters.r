@@ -8,8 +8,9 @@
 
 require(data.table)
 
-init_pop <- fread("data/initial_populations.csv")
-init_pop[, pop := floor(pop * 0.8)] ## Remnant from Roger's model - I think this is saying that the population in 1980 should be about 80% of that in 1985
+# init_pop <- fread("data/initial_populations.csv")
+init_pop <- fread("data/initial_populations_kzn_census_1985.csv")
+init_pop[, pop := floor(pop * 0.95)] ## The initial population values are from thet 1985 census - this is estimating the population in 1980
 init_pop[, c("hiv", "cd4", "vl", "circ", "prep", "condom", "art") := 0]
 setkey(init_pop, hiv, age, male, cd4, vl, circ, prep, condom, art)
 
