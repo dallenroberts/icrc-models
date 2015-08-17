@@ -100,13 +100,10 @@ epsilons <- fread("data/epsilons.csv")
 epsilons <- interpolate(breaks= epsilons$year, values = epsilons$epsilon)
 
 ## Number of partners per year by age, sex, and risk
-partners <- fread("data/partners_per_year.csv")
+# partners <- fread("data/partners_per_year.csv")
+partners <- fread("data/new_partners_per_year.csv")
 ## Adjust by time-step
 partners[, partners := partners * tstep]
-
-# Test adjustment by factor
-# partners[, partners := partners * 0.9]
-
 
 ## Theta - parameter that governs the extent to which differences in reported number of sexual partners between males and females is male (1) or female (0) driven
 theta <- 0.5
