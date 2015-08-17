@@ -43,16 +43,16 @@ dis_dist$vl <- factor(dis_dist$vl, levels = seq(1, 5), labels = c("Acute", "< 1,
 
 ## Plot control
 theme_set(theme_bw())
-colors <- c("blue4", "green4")
-names(colors) <- c("Female", "Male")
+colors <- c("blue4", "green4", "red4")
+names(colors) <- c("Female", "Male", "Both")
 sexColors <- scale_colour_manual(name = "Sex", values = colors)
 
-vl_colors <- rev(brewer.pal(5, "Spectral"))
-names(vl_colors) <- c("Acute", "< 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
+vl_colors <- rev(brewer.pal(6, "Spectral"))
+names(vl_colors) <- c("On ART", "Acute", "< 1,000", "1,000-10,000", "10,000-50,000", "> 50,000")
 vlColors <- scale_fill_manual(name = "Viral Load", values = vl_colors)
 
-cd4_colors <- rev(brewer.pal(5, "Spectral"))
-names(cd4_colors) <- c("Acute", "> 500", "350-500", "200-349", "< 200")
+cd4_colors <- rev(brewer.pal(6, "Spectral"))
+names(cd4_colors) <- c("On ART", "Acute", "> 500", "350-500", "200-349", "< 200")
 cd4Colors <- scale_fill_manual(name = "CD4", values = cd4_colors)
 
 
@@ -135,7 +135,7 @@ total_prev_data[, prev := prevalence * 100]
 
 total_prev_plot <- ggplot(data = total_prev, aes(x = year_exact, y = prev)) +
     geom_line(aes(colour = male)) +
-    geom_point(data = total_prev_data, aes(x = year, y = prev)) +
+    geom_point(data = total_prev_data, aes(x = year, y = prev, shape = location)) +
     sexColors + 
     scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
     xlab("Year") + ylab("HIV Prevalence (%)") +
@@ -149,14 +149,14 @@ age_prev[age_pop, prev := 100 * hiv_total/total]
 age_prev <- age_prev[hiv == "Positive"]
 
 age_prev_data <- fread("data/age_specific_prevalence.csv")
-age_prev_data <- age_prev_data[male  < 2]
-age_prev_data$male <- factor(age_prev_data$male, levels = c(0, 1), labels = c("Female", "Male"))
+# age_prev_data <- age_prev_data[male  < 2]
+age_prev_data$male <- factor(age_prev_data$male, levels = c(0, 1, 2), labels = c("Female", "Male", "Both"))
 age_prev_data$age <- factor(age_prev_data$age, levels = seq(1, 12), labels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"))
 age_prev_data[, prev := prevalence * 100]
 
 age_prev_plot <- ggplot(data = age_prev, aes(x = year_exact, y = prev)) +
   geom_line(aes(colour = male)) +
-  geom_point(data = age_prev_data, aes(x = year, y = prev, colour = male)) +
+  geom_point(data = age_prev_data, aes(x = year, y = prev, colour = male, shape = location)) +
   sexColors + 
   scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("HIV Prevalence (%)") +
@@ -178,6 +178,27 @@ incidence_rate_plot <- ggplot(data = total_incidence, aes(x = year, y = incidenc
   xlab("Year") + ylab("Incidence rate (%)") +
   ggtitle("Total HIV incidence")
 
+## Incidence in women ages 15-49 and men ages 15-54
+adult_incidence <- incidence[as.numeric(age) > 3 & ((male == "Female" & as.numeric(age) <= 10) | male == "Male" & as.numeric(age) <= 11), list(infections = sum(horiz_infections + vert_infections)), by = list(year, year_exact, male)]
+setkey(adult_incidence, male, year_exact)
+setkey(total_adult_pop, male, year_exact)
+adult_incidence[total_adult_pop, denom := total]
+adult_incidence <- adult_incidence[, list(incidence_rate = sum(infections)/sum(denom * tstep)), by = list(year, male)]
+
+adult_incidence_data <- fread("data/adult_incidence.csv")
+adult_incidence_data$male <- factor(adult_incidence_data$male, levels = c(0, 1, 2), labels = c("Female", "Male", "Both"))
+adult_incidence_data[, incidence := incidence * 100]
+
+
+
+adult_incidence_rate_plot <- ggplot(data = adult_incidence, aes(x = year, y = incidence_rate * 100)) +
+  geom_line(aes(colour = male)) +
+  geom_point(data = adult_incidence_data, aes(x = year, y = incidence, colour = male, shape = location)) + 
+  sexColors + 
+  scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
+  xlab("Year") + ylab("Incidence rate (%)") +
+  ggtitle("Adult  HIV incidence")
+
 
 ## By Age
 age_incidence <- incidence[, list(infections = sum(horiz_infections + vert_infections)), by = list(age, male, year_exact, year)]
@@ -188,8 +209,13 @@ setkey(age_pop, age, year_exact, male)
 age_incidence[age_pop, denom := total]
 age_incidence <- age_incidence[, list(incidence_rate = sum(infections)/sum(denom * tstep)), by = list(year, age, male)]
 
+age_incidence_data <- fread("data/age_specific_incidence.csv")
+age_incidence_data$male <- factor(age_incidence_data$male, levels = c(0, 1, 2), labels = c("Female", "Male", "Both"))
+age_incidence_data$age <- factor(age_incidence_data$age, levels = seq(1, 12), labels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"))
+age_incidence_data[, incidence := incidence * 100]
 incidence_rate_age_plot <- ggplot(data = age_incidence, aes(x = year, y = incidence_rate * 100)) +
   geom_line(aes(colour = male)) +
+  geom_point(data = age_incidence_data, aes(x = year, y = incidence, colour = male, shape = location)) +
   sexColors + 
   scale_x_continuous(limits = c(year_start, year_end), breaks = seq(year_start, year_end, by = 10)) +
   xlab("Year") + ylab("Annual incidence (%)") +
@@ -251,9 +277,14 @@ circ_age_plot <- ggplot(data = circ_age, aes(x = year_exact, y = cov)) +
   facet_wrap(~age) +
   ggtitle("Age-specific circumcision coverage")
 
-cd4_dist <- dis_dist[, list(size = sum(total)), by = list(age, cd4, year_exact)]
+## Distribution of disease
+cd4_dist <- dis_dist
+cd4_dist[art == 1, cd4 := "On ART"]
+cd4_dist <- cd4_dist[, list(size = sum(total)), by = list(age, cd4, year_exact)]
 cd4_dist[, pct := size / sum(size), by = list(age, year_exact)]
-vl_dist <- dis_dist[, list(size = sum(total)), by = list(age, vl, year_exact)]
+vl_dist <- dis_dist
+vl_dist[art == 1, vl := "On ART"]
+vl_dist <- vl_dist[, list(size = sum(total)), by = list(age, vl, year_exact)]
 vl_dist[, pct := size / sum(size), by = list(age, year_exact)]
 
 cd4_plot <- ggplot(data = cd4_dist, aes(x = year_exact, y = pct * 100)) +
@@ -279,6 +310,7 @@ print(death_rate_age_plot)
 print(total_prev_plot)
 print(age_prev_plot)
 print(incidence_rate_plot)
+print(adult_incidence_rate_plot)
 print(incidence_rate_age_plot)
 print(art_age_plot)
 print(circ_age_plot)
