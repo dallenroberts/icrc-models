@@ -11,7 +11,7 @@ library(reshape2)
 
 ## Run name
 date <- Sys.Date()
-name <- "runge_kutta_test"
+name <- "point01_runge_kutta_new_condom_smooth"
 dir.create(paste0("output/", date), recursive = TRUE)
 
 ## Global variables
@@ -106,44 +106,57 @@ for(tt in 1:nsteps) {
     seedInfections(pop, 0.001) 
   }
   
+  pop[, time := tt]
+  
+  ## Calculate calendar year
+  year <- floor(year_start + (tt - 1) * tstep)
+  
+  ## Distribute ART coverage
+  distributeART(pop, tt)
+  
+  ## Distribute condom coverage
+  distributeCondoms(pop, tt)
+  
+  ## Calculate statistics
+  ## Populations
+  pop_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, time)]
+  setkey(pop_stats, time, hiv, age, male)
+  population[pop_stats, pop_size := size]
+  
+  ## Disease distribution
+  dis_stats <- pop[hiv == 1, list(size = sum(count)), by = list(art, age, male, cd4, vl, time)]
+  setkey(dis_stats, time, age, male, cd4, vl, art)
+  dis_dist[dis_stats, total := size]
+  
+  ## Intervention coverage
+  int_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, art, condom, circ, time)]
+  setkey(int_stats, time, hiv, age, male, art, condom, circ)
+  interventions[int_stats, total := size]
+  
+  # Optional reduction in background mortality
+  if(year >= 1990) {
+    back_mort[, mu := mu * (100 - 0.5 * tstep)/100]
+  }
   pop[, hold := count]
   t_temp <- tt
   
   ## Compute derivative
   for(jj in 1:4) {
 
+    # print(jj)
+    # print(t_temp)
     
     pop[, time := t_temp]
+    
     ## Calculate calendar year
     year <- floor(year_start + (t_temp - 1) * tstep)
-    
+      
     ## Distribute ART coverage
-    distributeART(pop, t_temp)
+    distributeART(pop, tt)
     
     ## Distribute condom coverage
-    distributeCondoms(pop, t_temp)
+    distributeCondoms(pop, tt)
     
-    ## Calculate statistics
-    ## Populations
-    pop_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, time)]
-    setkey(pop_stats, time, hiv, age, male)
-    population[pop_stats, pop_size := size]
-    
-    ## Disease distribution
-    dis_stats <- pop[hiv == 1, list(size = sum(count)), by = list(art, age, male, cd4, vl, time)]
-    setkey(dis_stats, time, age, male, cd4, vl, art)
-    dis_dist[dis_stats, total := size]
-    
-    ## Intervention coverage
-    int_stats <- pop[, list(size = sum(count)), by = list(hiv, age, male, art, condom, circ, time)]
-    setkey(int_stats, time, hiv, age, male, art, condom, circ)
-    interventions[int_stats, total := size]
-    
-    # Optional reduction in background mortality
-    if(year >= 1990) {
-      back_mort[, mu := mu * (100 - 0.5 * tstep)/100]
-    }
-      
     ## Demography
     addBirths(pop)
     subtractDeaths(pop)
@@ -154,7 +167,7 @@ for(tt in 1:nsteps) {
     
     ## Transmission
     ## Calculate the mixing matrix
-    calcMixMat(pop, mixing_matrix, t_temp)
+    calcMixMat(pop, mixing_matrix, tt)
     
     ## Calculate adjusted partnerships per year
     adjustPartnerships(pop, mixing_matrix) 
@@ -169,30 +182,31 @@ for(tt in 1:nsteps) {
     if(jj == 1) {
       pop[, c("a", "diff") := list(diff, 0)]
       pop[, count := hold + 1/2 * a]
-      t_temp <- tt + 1/2 * tstep
+     #  t_temp <- tt + 1/2 * tstep
       
     } else if(jj == 2) {
       pop[, c("b", "diff") := list(diff, 0)]
       pop[, count := hold + 1/2 * b]
-      t_temp <- tt + 1/2 * tstep
+      # t_temp <- tt + 1/2 * tstep
     } else if (jj == 3) {
       pop[, c("c", "diff") := list(diff, 0)]
       pop[, count := hold + c]
-      t_temp <- tt + tstep
+      # t_temp <- tt + tstep
     } else if (jj == 4) {
       pop[, c("d", "diff") := list(diff, 0)]
       pop[, count := hold]
-      t_temp <- tt 
+      # t_temp <- tt 
     }
+    
+    # Adjust population to match risk prevalence
+    riskAdjust(pop)
   }
   
   pop[, c("count", "diff") := list(count + 1/6 * (a + 2*b + 2*c + d), 0)]
     
   # Adjust population to match risk prevalence
   riskAdjust(pop)
-    
-  }
- 
+  
   # Increment time step
   tt <- tt + 1
   
