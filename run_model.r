@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ##################################################
 ## Allen Roberts
 ## July 1, 2015
@@ -16,6 +17,26 @@ dir.create(paste0("output/", date), recursive = TRUE)
 ## Global variables
 year_start <- 1980
 year_end <- 2020
+=======
+##################################################
+## Allen Roberts
+## July 1, 2015
+##################################################
+
+rm(list = ls())
+
+library(data.table)
+library(reshape2)
+
+## Run name
+date <- Sys.Date()
+name <- "point005_tstep_new_condom_smooth"
+dir.create(paste0("output/", date), recursive = TRUE)
+
+## Global variables
+year_start <- 1980
+year_end <- 2020
+>>>>>>> b8c134248c52651fbcc776adc38efb0cda8a2680
 tstep <- 0.005 # years
 nsteps <- (year_end - year_start + 1) / tstep
 
